@@ -31,7 +31,7 @@ const BuyThreePromo = () => {
             <div className="w-full lg:w-1/2 p-6">
               <div className="relative aspect-[16/9] rounded-[40px] overflow-hidden">
                 <Image
-                  src="/assets/buy3.PNG"
+                  src="/assets/buy.png"
                   alt="TPS Plant Food bottles collection"
                   fill
                   className="object-contain"
