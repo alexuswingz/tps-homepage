@@ -2,229 +2,448 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import { useCartUI } from '@/app/template';
+import { StarIcon } from '@heroicons/react/24/solid';
+import { shopifyFetch } from '@/lib/shopify';
+import ShopByPlant from "@/components/ShopByPlant";
+import PlantCare from "@/components/PlantCare";
+import BuyThreePromo from '@/components/BuyThreePromo';
+import WhyTPS from '@/components/WhyTPS';
+import Reviews from '@/components/Reviews';
 
-interface MoneyV2 {
-  amount: string;
-  currencyCode: string;
-}
-
-interface Variant {
-  id: string;
+interface ProductData {
   title: string;
-  price: MoneyV2;
-  compareAtPrice: MoneyV2 | null;
-  selectedOptions: {
-    name: string;
-    value: string;
-  }[];
-  quantityAvailable: number;
-}
-
-interface Product {
-  id: string;
-  title: string;
-  handle: string;
-  category?: string;
-  featuredImage: {
+  category: string;
+  subcategory: string;
+  rating: number;
+  totalReviews: number;
+  price: number;
+  description: string;
+  variants: Array<{
+    id: string;
+    title: string;
+    price: number;
+    inStock: boolean;
+  }>;
+  bundles: Array<{
+    id: string;
+    title: string;
+    price: number;
+    image: string;
+  }>;
+  subscription: {
+    oneTime: { price: number };
+    recurring: { price: number; frequency: string };
+  };
+  featuredImage: string;
+  images: Array<{
     url: string;
     altText: string;
-  };
-  variants: {
-    edges: {
-      node: Variant;
-    }[];
-  };
-  reviews?: number;
-  isBestSeller?: boolean;
-  popularityScore?: number;
+  }>;
+  isBestSeller: boolean;
 }
 
 const ProductPage = () => {
   const params = useParams();
   const { handle } = params;
-  const [product, setProduct] = useState<Product | null>(null);
-  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
+  const [selectedVariant, setSelectedVariant] = useState('8-ounce');
   const [quantity, setQuantity] = useState(1);
   const { addToCart } = useCart();
   const { openCart } = useCartUI();
+  const [product, setProduct] = useState<ProductData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedImage, setSelectedImage] = useState(0);
 
   useEffect(() => {
-    // In a real app, fetch product data from your API
-    // For now, we'll simulate this with mock data
-    const mockProduct: Product = {
-      id: 'gid://shopify/Product/1',
-      title: 'INDOOR PLANT FOOD',
-      handle: 'indoor-plant-food',
-      category: 'houseplants',
-      featuredImage: {
-        url: '/assets/products/indoor-plant-food.png',
-        altText: 'Indoor Plant Food',
-      },
-      variants: {
-        edges: [
-          {
-            node: {
-              id: 'gid://shopify/ProductVariant/1-1',
-              title: '8 Ounces',
-              price: { amount: '14.99', currencyCode: 'USD' },
-              compareAtPrice: null,
-              selectedOptions: [{ name: 'Size', value: '8 Ounces' }],
-              quantityAvailable: 10,
+    const fetchProduct = async () => {
+      setLoading(true);
+      setError(null);
+
+      const query = `
+        query ProductByHandle($handle: String!) {
+          product(handle: $handle) {
+            id
+            title
+            handle
+            description
+            images(first: 10) {
+              edges {
+                node {
+                  url
+                  altText
+                }
+              }
+            }
+            featuredImage {
+              url
+              altText
+            }
+            variants(first: 10) {
+              edges {
+                node {
+                  id
+                  title
+                  price {
+                    amount
+                    currencyCode
+                  }
+                  quantityAvailable
+                }
+              }
+            }
+          }
+        }
+      `;
+
+      try {
+        const response = await shopifyFetch({
+          query,
+          variables: { handle }
+        });
+
+        if (response.status === 200 && response.body?.data?.product) {
+          const shopifyProduct = response.body.data.product;
+          
+          // Get all images including featured image
+          const allImages = [
+            shopifyProduct.featuredImage,
+            ...shopifyProduct.images.edges.map((edge: any) => edge.node)
+          ].filter((image, index, self) => 
+            // Remove duplicates by URL
+            index === self.findIndex((t) => t.url === image.url)
+          );
+          
+          // Transform Shopify data to match our interface
+          const transformedProduct: ProductData = {
+            title: shopifyProduct.title,
+            category: "HOUSE PLANTS",
+            subcategory: "EASY FEED FORMULA",
+            rating: 4.6,
+            totalReviews: 1239,
+            price: parseFloat(shopifyProduct.variants.edges[0].node.price.amount),
+            description: shopifyProduct.description,
+            variants: shopifyProduct.variants.edges.map(({ node }: any) => ({
+              id: node.id,
+              title: node.title,
+              price: parseFloat(node.price.amount),
+              inStock: node.quantityAvailable > 0
+            })),
+            bundles: [
+              {
+                id: 'single',
+                title: 'Plant Food Only',
+                price: parseFloat(shopifyProduct.variants.edges[0].node.price.amount),
+                image: shopifyProduct.featuredImage.url
+              },
+              {
+                id: 'bundle',
+                title: 'Plant Food + Companion Product',
+                price: parseFloat(shopifyProduct.variants.edges[0].node.price.amount) * 2,
+                image: shopifyProduct.featuredImage.url
+              }
+            ],
+            subscription: {
+              oneTime: { price: parseFloat(shopifyProduct.variants.edges[0].node.price.amount) },
+              recurring: {
+                price: parseFloat(shopifyProduct.variants.edges[0].node.price.amount) * 0.85,
+                frequency: '2 months'
+              }
             },
-          },
-        ],
-      },
-      reviews: 1203,
-      isBestSeller: true,
+            featuredImage: shopifyProduct.featuredImage.url,
+            images: allImages,
+            isBestSeller: true
+          };
+
+          setProduct(transformedProduct);
+          setSelectedVariant(transformedProduct.variants[0].id);
+        } else {
+          setError('Failed to fetch product');
+          console.error('Invalid response format:', response);
+        }
+      } catch (error) {
+        setError('Error fetching product');
+        console.error('Error fetching product:', error);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    setProduct(mockProduct);
-    setSelectedVariant(mockProduct.variants.edges[0].node);
+    if (handle) {
+      fetchProduct();
+    }
   }, [handle]);
 
-  if (!product || !selectedVariant) {
+  const handleAddToCart = () => {
+    if (!product) return;
+    
+    const variant = product.variants.find(v => v.id === selectedVariant);
+    if (!variant) return;
+
+    const item = {
+      variantId: variant.id,
+      productId: variant.id,
+      title: product.title,
+      variantTitle: variant.title,
+      price: {
+        amount: variant.price.toString(),
+        currencyCode: 'USD'
+      },
+      image: {
+        url: product.featuredImage,
+        altText: product.title
+      },
+      quantity: quantity
+    };
+
+    addToCart(item);
+    openCart();
+  };
+
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-[#FF6B6B]"></div>
+      <div className="min-h-screen bg-[#FDF6EF] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#FF6B6B]"></div>
       </div>
     );
   }
 
-  const handleAddToCart = () => {
-    if (selectedVariant) {
-      const item = {
-        variantId: selectedVariant.id,
-        productId: product.id,
-        title: product.title,
-        variantTitle: selectedVariant.selectedOptions?.map(opt => opt.value).join(' - ') || '',
-        price: selectedVariant.price,
-        image: product.featuredImage,
-        quantity,
-      };
-      
-      addToCart(item);
-      openCart();
-    }
-  };
+  if (error || !product) {
+    return (
+      <div className="min-h-screen bg-[#FDF6EF] flex items-center justify-center">
+        <div className="text-red-500">Failed to load product</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-[#FDF6EF] py-12">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="bg-white rounded-lg shadow-sm p-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-            {/* Product Image */}
-            <div className="relative h-[500px]">
-              <Image
-                src={product.featuredImage.url}
-                alt={product.featuredImage.altText}
-                fill
-                className="object-contain"
-                priority
-              />
+    <main className="bg-[#FDF6EF]">
+      {/* Breadcrumb */}
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-4">
+        <div className="flex items-center space-x-2 text-sm">
+          <Link href="/" className="text-gray-600 hover:text-gray-900">Home</Link>
+          <span className="text-gray-400">/</span>
+          <Link href="/shop" className="text-gray-600 hover:text-gray-900">Products</Link>
+          <span className="text-gray-400">/</span>
+          <span className="text-[#FF6B6B]">{product.title}</span>
+        </div>
+      </div>
+
+      {/* Product Hero Section */}
+      <section className="w-full bg-[#FDF6EF]">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-8 sm:py-12">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+            {/* Left Column - Product Image */}
+            <div className="relative">
               {product.isBestSeller && (
-                <div className="absolute top-4 right-4 bg-[#FF6B6B] text-white px-3 py-1 rounded-full text-sm font-medium">
-                  BEST SELLER!
+                <div className="absolute top-4 left-4 z-10 bg-[#FF6B6B] text-white px-3 py-1 rounded-full text-sm font-medium">
+                  BEST SELLER
+                </div>
+              )}
+              <div className="relative aspect-square bg-[#F2F7F2] rounded-3xl overflow-hidden">
+                <Image
+                  src={product.images[selectedImage].url}
+                  alt={product.images[selectedImage].altText || product.title}
+                  fill
+                  className="object-contain p-8"
+                  priority
+                />
+              </div>
+              {product.images.length > 1 && (
+                <div className="mt-4 grid grid-cols-5 gap-2">
+                  {product.images.map((image, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setSelectedImage(index)}
+                      className={`aspect-square rounded-xl bg-[#F2F7F2] p-2 hover:bg-gray-100 ${
+                        selectedImage === index ? 'ring-2 ring-[#FF6B6B]' : ''
+                      }`}
+                    >
+                      <div className="relative w-full h-full">
+                        <Image
+                          src={image.url}
+                          alt={image.altText || `${product.title} - View ${index + 1}`}
+                          fill
+                          className="object-contain"
+                        />
+                      </div>
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
 
-            {/* Product Info */}
-            <div>
-              <h1 className="text-3xl font-bold mb-4">{product.title}</h1>
-              
-              <div className="flex items-center mb-6">
-                <div className="flex">
-                  {[...Array(5)].map((_, i) => (
-                    <svg key={i} className="w-5 h-5 text-[#FF6B6B] fill-current" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
+            {/* Right Column - Product Info */}
+            <div className="flex flex-col">
+              <div className="mb-6">
+                <div className="text-sm text-gray-600 mb-2">{product.category} · {product.subcategory}</div>
+                <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">{product.title}</h1>
+                
+                {/* Rating */}
+                <div className="flex items-center mb-4">
+                  <div className="flex items-center">
+                    {[...Array(5)].map((_, i) => (
+                      <StarIcon
+                        key={i}
+                        className={`w-5 h-5 ${i < Math.floor(product.rating) ? 'text-[#FF6B6B]' : 'text-gray-200'}`}
+                      />
+                    ))}
+                  </div>
+                  <span className="ml-2 text-[#FF6B6B] font-medium">{product.rating} out of 5</span>
+                  <span className="ml-2 text-gray-500">({product.totalReviews} global ratings)</span>
+                </div>
+
+                <p className="text-gray-600">{product.description}</p>
+              </div>
+
+              {/* Size Selection */}
+              <div className="mb-8">
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="font-medium text-gray-900">SELECT SIZE</h3>
+                  <span className="text-[#FF6B6B] text-sm">* Some options may be out of stock</span>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  {product.variants.map((variant) => (
+                    <button
+                      key={variant.id}
+                      className={`p-4 rounded-2xl border-2 ${
+                        selectedVariant === variant.id
+                          ? 'border-[#FF6B6B] bg-[#FFF5F5]'
+                          : 'border-gray-200 bg-[#F2F7F2]'
+                      } ${!variant.inStock ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      onClick={() => variant.inStock && setSelectedVariant(variant.id)}
+                      disabled={!variant.inStock}
+                    >
+                      <div className="text-sm font-medium mb-1">{variant.title}</div>
+                      <div className="text-gray-500">${variant.price.toFixed(2)}</div>
+                      {!variant.inStock && (
+                        <div className="text-gray-500 text-sm mt-1">OUT OF STOCK</div>
+                      )}
+                    </button>
                   ))}
                 </div>
-                <span className="ml-2 text-sm text-gray-600">{product.reviews} reviews</span>
               </div>
 
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Size
-                  </label>
-                  <select 
-                    className="w-full bg-white rounded-md px-4 py-2 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent"
-                    value={selectedVariant.id}
-                    onChange={(e) => {
-                      const variant = product.variants.edges.find(v => v.node.id === e.target.value)?.node;
-                      if (variant) setSelectedVariant(variant);
-                    }}
-                  >
-                    {product.variants.edges?.map(({ node }) => (
-                      <option key={node.id} value={node.id}>
-                        {node.selectedOptions?.map(opt => opt.value).join(' - ')}
-                      </option>
-                    ))}
-                  </select>
+              {/* Bundle Selection */}
+              <div className="mb-8">
+                <div className="grid grid-cols-2 gap-4">
+                  {product.bundles.map((bundle) => (
+                    <div
+                      key={bundle.id}
+                      className={`p-4 rounded-2xl border-2 ${
+                        bundle.id === 'single'
+                          ? 'border-[#FF6B6B] bg-[#FFF5F5]'
+                          : 'border-gray-200 bg-[#F2F7F2]'
+                      }`}
+                    >
+                      <div className="relative h-24 mb-3">
+                        <Image
+                          src={bundle.image}
+                          alt={bundle.title}
+                          fill
+                          className="object-contain"
+                        />
+                      </div>
+                      <div className="text-sm font-medium mb-1">{bundle.title}</div>
+                      <div className="text-[#FF6B6B] font-medium">${bundle.price.toFixed(2)}</div>
+                    </div>
+                  ))}
                 </div>
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Quantity
-                  </label>
-                  <div className="flex items-center space-x-4">
-                    <button 
-                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50"
-                    >
-                      -
-                    </button>
-                    <span className="text-lg font-medium">{quantity}</span>
-                    <button 
-                      onClick={() => setQuantity(quantity + 1)}
-                      className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50"
-                    >
-                      +
-                    </button>
+              {/* Purchase Options */}
+              <div className="mb-8">
+                <div className="border-2 border-gray-200 rounded-2xl p-4 bg-[#F2F7F2]">
+                  <div className="flex items-center space-x-4 mb-4">
+                    <div className="flex-1">
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          name="purchase-type"
+                          value="one-time"
+                          defaultChecked
+                          className="text-[#FF6B6B] focus:ring-[#FF6B6B]"
+                        />
+                        <span className="ml-2 font-medium">ONE-TIME PURCHASE</span>
+                      </label>
+                      <div className="ml-6 text-2xl font-bold text-gray-900">
+                        ${product.subscription.oneTime.price.toFixed(2)}
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          name="purchase-type"
+                          value="subscribe"
+                          className="text-[#FF6B6B] focus:ring-[#FF6B6B]"
+                        />
+                        <span className="ml-2 font-medium">SUBSCRIBE · SAVE!</span>
+                      </label>
+                      <div className="ml-6">
+                        <div className="text-2xl font-bold text-gray-900">
+                          ${product.subscription.recurring.price.toFixed(2)}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          Delivery every {product.subscription.recurring.frequency}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-
-                <div className="flex items-center justify-between py-4 border-t border-b border-gray-200">
-                  <span className="text-lg font-medium">Price</span>
-                  <span className="text-2xl font-bold">
-                    ${(parseFloat(selectedVariant.price.amount) * quantity).toFixed(2)}
-                  </span>
-                </div>
-
-                <button
-                  onClick={handleAddToCart}
-                  className="w-full bg-[#FF6B6B] text-white py-4 rounded-md font-medium hover:bg-[#ff5252] transition-colors"
-                >
-                  ADD TO CART
-                </button>
-
-                <div className="prose prose-sm max-w-none">
-                  <h3 className="text-lg font-medium mb-2">Product Description</h3>
-                  <p className="text-gray-600">
-                    Our specially formulated plant food is designed to provide optimal nutrition for your indoor plants. 
-                    Made with high-quality ingredients, this balanced fertilizer promotes healthy growth, vibrant foliage, 
-                    and strong root development.
-                  </p>
-                  
-                  <h3 className="text-lg font-medium mt-4 mb-2">Key Benefits</h3>
-                  <ul className="list-disc pl-5 text-gray-600">
-                    <li>Promotes healthy growth and vibrant foliage</li>
-                    <li>Strengthens root system</li>
-                    <li>Easy to use with clear instructions</li>
-                    <li>Safe for all indoor plants</li>
-                    <li>Made in the USA</li>
-                  </ul>
-                </div>
               </div>
+
+              {/* Add to Cart Button */}
+              <button
+                onClick={handleAddToCart}
+                disabled={!product.variants.some(v => v.inStock)}
+                className="w-full bg-[#FF6B6B] text-white py-4 rounded-full font-medium text-lg hover:bg-opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {product.variants.some(v => v.inStock) ? 'ADD TO CART' : 'OUT OF STOCK'}
+              </button>
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </section>
+
+      {/* Additional Product Information */}
+      <section className="w-full bg-[#F2F7F2] py-16">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <h3 className="text-xl font-bold mb-2">Plant-Specific Formula</h3>
+              <p className="text-gray-600">Tailored nutrients for optimal growth and health of your specific plant type.</p>
+            </div>
+            <div className="text-center">
+              <h3 className="text-xl font-bold mb-2">Easy to Use</h3>
+              <p className="text-gray-600">Simple application process with clear instructions for the best results.</p>
+            </div>
+            <div className="text-center">
+              <h3 className="text-xl font-bold mb-2">Safe for Indoor Use</h3>
+              <p className="text-gray-600">Non-toxic formula that's safe for use around children and pets.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Buy Three Promo Section */}
+      <BuyThreePromo />
+
+      {/* Why TPS Section */}
+      <WhyTPS />
+
+      {/* Reviews Section */}
+      <Reviews />
+
+      {/* Shop By Plant Section */}
+      <ShopByPlant />
+
+      {/* Plant Care Section */}
+      <PlantCare />
+    </main>
   );
 };
 

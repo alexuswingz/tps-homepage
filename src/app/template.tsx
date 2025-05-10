@@ -7,6 +7,8 @@ import { CartProvider } from "@/context/CartContext";
 import { Toaster } from "react-hot-toast";
 import CartSlideOver from "@/components/CartSlideOver";
 import Footer from "@/components/Footer";
+import PageTransition from "@/components/PageTransition";
+import { AnimatePresence } from "framer-motion";
 
 interface CartUIContextType {
   isCartOpen: boolean;
@@ -39,7 +41,11 @@ export default function Template({
       <CartUIContext.Provider value={{ isCartOpen, openCart, closeCart }}>
         <AnnouncementBanner />
         <Navbar onCartClick={openCart} />
-        {children}
+        <AnimatePresence mode="wait">
+          <PageTransition>
+            {children}
+          </PageTransition>
+        </AnimatePresence>
         <Footer />
         <CartSlideOver isOpen={isCartOpen} setIsOpen={setIsCartOpen} />
         <Toaster position="bottom-right" />

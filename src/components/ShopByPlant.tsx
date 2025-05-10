@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ShoppingCartIcon } from '@heroicons/react/24/outline';
@@ -8,6 +8,14 @@ import { shopifyFetch } from '@/lib/shopify';
 import { useCart } from '@/context/CartContext';
 import { toast } from 'react-hot-toast';
 import { useCartUI } from '@/app/template';
+// Import Swiper React components
+import { Swiper, SwiperSlide } from 'swiper/react';
+// Import Swiper styles
+import 'swiper/css';
+import 'swiper/css/navigation';
+import 'swiper/css/pagination';
+// Import required modules
+import { Navigation, Pagination, A11y } from 'swiper/modules';
 
 interface MoneyV2 {
   amount: string;
@@ -115,7 +123,7 @@ const ProductCard = ({ product, backgroundColor }: ProductCardProps) => {
           Best Seller
         </div>
       )}
-      <div className="relative h-[280px] flex-grow mb-4">
+      <Link href={`/product/${product.handle}`} className="relative h-[280px] flex-grow mb-4 block">
         <Image
           src={product.featuredImage?.url || '/placeholder.png'}
           alt={product.featuredImage?.altText || product.title}
@@ -124,7 +132,7 @@ const ProductCard = ({ product, backgroundColor }: ProductCardProps) => {
           sizes="(max-width: 768px) 280px, 300px"
           priority
         />
-      </div>
+      </Link>
       <div className="flex flex-col justify-end space-y-2">
         <div className="flex items-center mb-1">
           <div className="flex">
@@ -198,19 +206,6 @@ const ShopByPlant = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [startX, setStartX] = useState(0);
-  const [scrollLeft, setScrollLeft] = useState(0);
-  const [activeSlide, setActiveSlide] = useState(0);
-  const [isScrolling, setIsScrolling] = useState(false);
-  const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
-  const [dragStarted, setDragStarted] = useState(false);
-  const dragThreshold = 8; // px
-  const [scrollVelocity, setScrollVelocity] = useState(0);
-  const lastScrollTime = useRef<number>(0);
-  const lastScrollLeft = useRef<number>(0);
-  const scrollAnimationFrame = useRef<number | null>(null);
 
   const houseplantsList = [
     'Money Tree Fertilizer',
@@ -398,314 +393,6 @@ const ShopByPlant = () => {
     'Jasmine Fertilizer'
   ];
 
-  const scrollProducts = (direction: 'left' | 'right') => {
-    if (scrollContainerRef.current) {
-      const container = scrollContainerRef.current;
-      const cardWidth = 300 + 24; // card width + gap
-      const visibleCards = Math.floor(container.clientWidth / cardWidth);
-      const scrollAmount = direction === 'left' ? -cardWidth * visibleCards : cardWidth * visibleCards;
-      
-      const newScrollPosition = container.scrollLeft + scrollAmount;
-      
-      container.scrollTo({
-        left: newScrollPosition,
-        behavior: 'smooth'
-      });
-      
-      // Update active slide
-      setTimeout(() => {
-        updateActiveSlide();
-      }, 500);
-    }
-  };
-
-  const updateActiveSlide = () => {
-    if (scrollContainerRef.current) {
-      const container = scrollContainerRef.current;
-      const cardWidth = 300 + 24; // card width + gap
-      const scrollPosition = container.scrollLeft;
-      const newActiveSlide = Math.floor(scrollPosition / (cardWidth * 4));
-      setActiveSlide(newActiveSlide);
-    }
-  };
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (!scrollContainerRef.current) return;
-    
-    // Don't initiate drag if clicking on form elements
-    const target = e.target as HTMLElement;
-    if (target.tagName === 'SELECT' || target.tagName === 'BUTTON' || 
-        target.closest('select') || target.closest('button')) {
-      return;
-    }
-    
-    // Allow dragging from anywhere else in the container
-    e.preventDefault(); // Prevent default behavior
-    setDragStarted(false);
-    setIsDragging(true); // Set dragging to true immediately
-    setStartX(e.pageX - scrollContainerRef.current.offsetLeft);
-    setScrollLeft(scrollContainerRef.current.scrollLeft);
-    lastScrollLeft.current = scrollContainerRef.current.scrollLeft;
-    lastScrollTime.current = Date.now();
-    if (scrollContainerRef.current.style.scrollBehavior !== 'auto') {
-      scrollContainerRef.current.style.scrollBehavior = 'auto';
-    }
-  };
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (!scrollContainerRef.current) return;
-    
-    // Don't initiate drag if touching form elements
-    const target = e.target as HTMLElement;
-    if (target.tagName === 'SELECT' || target.tagName === 'BUTTON' || 
-        target.closest('select') || target.closest('button')) {
-      return;
-    }
-    
-    // Allow dragging from anywhere else in the container
-    e.preventDefault(); // Prevent default behavior
-    setDragStarted(false);
-    setIsDragging(true); // Set dragging to true immediately
-    setStartX(e.touches[0].pageX - scrollContainerRef.current.offsetLeft);
-    setScrollLeft(scrollContainerRef.current.scrollLeft);
-    lastScrollLeft.current = scrollContainerRef.current.scrollLeft;
-    lastScrollTime.current = Date.now();
-    if (scrollContainerRef.current.style.scrollBehavior !== 'auto') {
-      scrollContainerRef.current.style.scrollBehavior = 'auto';
-    }
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!scrollContainerRef.current || !isDragging) return;
-    
-    const x = e.pageX - scrollContainerRef.current.offsetLeft;
-    const walk = x - startX;
-    
-    if (!dragStarted && Math.abs(walk) > dragThreshold) {
-      setDragStarted(true);
-      // Only prevent default once we've confirmed this is a drag operation
-      e.preventDefault();
-    }
-    
-    if (isDragging && dragStarted) {
-      // Only prevent default for confirmed drag operations
-      e.preventDefault();
-      
-      const currentTime = performance.now();
-      const timeDiff = currentTime - lastScrollTime.current;
-      const currentScrollLeft = scrollContainerRef.current.scrollLeft;
-      const scrollDiff = currentScrollLeft - lastScrollLeft.current;
-      
-      // Calculate velocity with improved precision
-      const velocity = timeDiff > 0 ? scrollDiff / timeDiff : 0;
-      setScrollVelocity(velocity);
-      
-      // Smoother scrolling with easing
-      const scrollMultiplier = 1.2; // Further reduced for smoother movement
-      const newScrollLeft = scrollLeft - walk * scrollMultiplier;
-      
-      // Apply smooth scrolling with RAF
-      if (scrollAnimationFrame.current) {
-        cancelAnimationFrame(scrollAnimationFrame.current);
-      }
-      
-      scrollAnimationFrame.current = requestAnimationFrame(() => {
-        if (scrollContainerRef.current) {
-          scrollContainerRef.current.scrollLeft = newScrollLeft;
-          // Only update scrolling state if it's not already set
-          if (!isScrolling) {
-            setIsScrolling(true);
-          }
-        }
-      });
-      
-      lastScrollLeft.current = currentScrollLeft;
-      lastScrollTime.current = currentTime;
-      
-      // Debounce the scrolling state update
-      if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
-      scrollTimeout.current = setTimeout(() => setIsScrolling(false), 100);
-    }
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!scrollContainerRef.current || !isDragging) return;
-    
-    const x = e.touches[0].pageX - scrollContainerRef.current.offsetLeft;
-    const walk = x - startX;
-    
-    if (!dragStarted && Math.abs(walk) > dragThreshold) {
-      setDragStarted(true);
-      // Only prevent default once we've confirmed this is a drag operation
-      e.preventDefault();
-    }
-    
-    if (isDragging && dragStarted) {
-      // Only prevent default for confirmed drag operations
-      e.preventDefault();
-      
-      const currentTime = performance.now();
-      const timeDiff = currentTime - lastScrollTime.current;
-      const currentScrollLeft = scrollContainerRef.current.scrollLeft;
-      const scrollDiff = currentScrollLeft - lastScrollLeft.current;
-      
-      // Calculate velocity with improved precision
-      const velocity = timeDiff > 0 ? scrollDiff / timeDiff : 0;
-      setScrollVelocity(velocity);
-      
-      // Smoother scrolling with easing
-      const scrollMultiplier = 1.2; // Further reduced for smoother movement
-      const newScrollLeft = scrollLeft - walk * scrollMultiplier;
-      
-      // Apply smooth scrolling with RAF
-      if (scrollAnimationFrame.current) {
-        cancelAnimationFrame(scrollAnimationFrame.current);
-      }
-      
-      scrollAnimationFrame.current = requestAnimationFrame(() => {
-        if (scrollContainerRef.current) {
-          scrollContainerRef.current.scrollLeft = newScrollLeft;
-          // Only update scrolling state if it's not already set
-          if (!isScrolling) {
-            setIsScrolling(true);
-          }
-        }
-      });
-      
-      lastScrollLeft.current = currentScrollLeft;
-      lastScrollTime.current = currentTime;
-      
-      // Debounce the scrolling state update
-      if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
-      scrollTimeout.current = setTimeout(() => setIsScrolling(false), 100);
-    }
-  };
-
-  const handleMouseUp = () => {
-    if (!isDragging) return;
-    
-    setIsDragging(false);
-    setDragStarted(false);
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.style.scrollBehavior = 'smooth';
-      if (dragStarted) {
-        applyMomentum();
-      } else {
-        snapToCard();
-      }
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (!isDragging) return;
-    
-    setIsDragging(false);
-    setDragStarted(false);
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.style.scrollBehavior = 'smooth';
-      if (dragStarted) {
-        applyMomentum();
-      } else {
-        snapToCard();
-      }
-    }
-  };
-
-  const applyMomentum = () => {
-    if (!scrollContainerRef.current) return;
-    
-    const container = scrollContainerRef.current;
-    const cardWidth = 300 + 24; // card width + gap
-    const currentScrollLeft = container.scrollLeft;
-    const velocity = scrollVelocity;
-    
-    // Enhanced momentum calculation with damping
-    const momentumDistance = velocity * 1200; // Reduced for more controlled momentum
-    const targetScrollLeft = currentScrollLeft + momentumDistance;
-    
-    // Find nearest card position with improved snapping
-    const nearestCardIndex = Math.round(targetScrollLeft / cardWidth);
-    const finalScrollLeft = nearestCardIndex * cardWidth;
-    
-    // Smooth animation with easing
-    const startTime = performance.now();
-    const duration = 600; // Reduced duration for snappier feel
-    
-    const animate = (currentTime: number) => {
-      const elapsed = currentTime - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      
-      // Improved easing function for smoother animation
-      const easeOutQuart = (t: number) => 1 - Math.pow(1 - t, 4);
-      const easedProgress = easeOutQuart(progress);
-      
-      const currentScroll = currentScrollLeft + (finalScrollLeft - currentScrollLeft) * easedProgress;
-      
-      if (scrollContainerRef.current) {
-        scrollContainerRef.current.scrollLeft = currentScroll;
-      }
-      
-      if (progress < 1) {
-        scrollAnimationFrame.current = requestAnimationFrame(animate);
-      } else {
-        // Update active slide after animation completes
-        updateActiveSlide();
-      }
-    };
-    
-    scrollAnimationFrame.current = requestAnimationFrame(animate);
-  };
-
-  const snapToCard = () => {
-    if (!scrollContainerRef.current) return;
-    const container = scrollContainerRef.current;
-    const cardWidth = 300 + 24; // card width + gap
-    const scrollPosition = container.scrollLeft;
-    const nearestCardIndex = Math.round(scrollPosition / cardWidth);
-    
-    // Smooth animation with easing
-    const startTime = performance.now();
-    const duration = 400; // Reduced duration for snappier feel
-    const startScroll = container.scrollLeft;
-    const targetScroll = nearestCardIndex * cardWidth;
-    
-    const animate = (currentTime: number) => {
-      const elapsed = currentTime - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      
-      // Improved easing function for smoother animation
-      const easeOutQuart = (t: number) => 1 - Math.pow(1 - t, 4);
-      const easedProgress = easeOutQuart(progress);
-      
-      const currentScroll = startScroll + (targetScroll - startScroll) * easedProgress;
-      
-      if (scrollContainerRef.current) {
-        scrollContainerRef.current.scrollLeft = currentScroll;
-      }
-      
-      if (progress < 1) {
-        scrollAnimationFrame.current = requestAnimationFrame(animate);
-      } else {
-        // Update active slide after animation completes
-        updateActiveSlide();
-      }
-    };
-    
-    scrollAnimationFrame.current = requestAnimationFrame(animate);
-  };
-
-  const handleScroll = () => {
-    if (!isScrolling) {
-      updateActiveSlide();
-    }
-    
-    // Add debounce for performance
-    if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
-    scrollTimeout.current = setTimeout(() => {
-      if (!isDragging) snapToCard();
-    }, 150);
-  };
-
   const markBestSellers = (products: Product[]) => {
     // Use a seeded random number generator for consistency
     const seededRandom = (seed: number) => {
@@ -873,26 +560,6 @@ const ShopByPlant = () => {
     
   }, [activeCategory, products, searchQuery]);
 
-  useEffect(() => {
-    // Add scroll event listener
-    const scrollContainer = scrollContainerRef.current;
-    if (scrollContainer) {
-      scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
-    }
-    
-    return () => {
-      if (scrollContainer) {
-        scrollContainer.removeEventListener('scroll', handleScroll);
-      }
-      if (scrollTimeout.current) {
-        clearTimeout(scrollTimeout.current);
-      }
-      if (scrollAnimationFrame.current) {
-        cancelAnimationFrame(scrollAnimationFrame.current);
-      }
-    };
-  }, [isDragging, isScrolling]);
-
   const backgroundColors = [
     "bg-[#F2F7F2]", // Light mint green
     "bg-[#F7F2F2]", // Light pink
@@ -900,18 +567,9 @@ const ShopByPlant = () => {
     "bg-[#F7F7F2]"  // Light yellow
   ];
 
-  // Calculate number of pages
-  const itemsPerPage = 4;
-  const totalPages = Math.ceil((filteredProducts?.length || 0) / itemsPerPage);
-
   // Handle search input change
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
-    // Reset to first slide when search changes
-    setActiveSlide(0);
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollLeft = 0;
-    }
   };
 
   return (
@@ -942,146 +600,146 @@ const ShopByPlant = () => {
         
         {/* Category buttons */}
         <div className="flex flex-wrap items-center gap-3 mb-10">
-          <button 
+          <Link 
+            href="/category/houseplants"
             className={`${activeCategory === 'HOUSEPLANTS' ? 'bg-[#8B7355] text-white' : 'bg-[#E8E0D4] text-[#8B7355]'} px-6 py-2.5 rounded-full font-medium transition-colors hover:bg-[#8B7355] hover:text-white`}
             onClick={() => setActiveCategory('HOUSEPLANTS')}
           >
             HOUSEPLANTS
-          </button>
-          <button 
+          </Link>
+          <Link 
+            href="/category/garden-plants"
             className={`${activeCategory === 'GARDEN PLANTS' ? 'bg-[#8B7355] text-white' : 'bg-[#E8E0D4] text-[#8B7355]'} px-6 py-2.5 rounded-full font-medium transition-colors hover:bg-[#8B7355] hover:text-white`}
             onClick={() => setActiveCategory('GARDEN PLANTS')}
           >
             GARDEN PLANTS
-          </button>
-          <button 
+          </Link>
+          <Link 
+            href="/category/hydro-aquatic"
             className={`${activeCategory === 'HYDRO & AQUATIC' ? 'bg-[#8B7355] text-white' : 'bg-[#E8E0D4] text-[#8B7355]'} px-6 py-2.5 rounded-full font-medium transition-colors hover:bg-[#8B7355] hover:text-white`}
             onClick={() => setActiveCategory('HYDRO & AQUATIC')}
           >
             HYDRO & AQUATIC
-          </button>
-          <button 
+          </Link>
+          <Link 
+            href="/category/supplements"
             className={`${activeCategory === 'SUPPLEMENTS' ? 'bg-[#8B7355] text-white' : 'bg-[#E8E0D4] text-[#8B7355]'} px-6 py-2.5 rounded-full font-medium transition-colors hover:bg-[#8B7355] hover:text-white`}
             onClick={() => setActiveCategory('SUPPLEMENTS')}
           >
             SUPPLEMENTS
-          </button>
-          <button 
+          </Link>
+          <Link 
+            href="/category/all"
             className="bg-[#FF6B6B] text-white px-6 py-2.5 rounded-full font-medium hover:bg-[#ff5252] transition-colors"
             onClick={() => setActiveCategory('ALL')}
           >
             SHOP ALL
-          </button>
+          </Link>
         </div>
 
-        {/* Product scroll container with navigation buttons */}
+        {/* Product carousel with Swiper */}
         <div className="relative">
-          {filteredProducts.length > 0 && (
-            <button
-              onClick={() => scrollProducts('left')}
-              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white rounded-full p-3 shadow-lg transition-opacity duration-200 ease-in-out"
-              style={{ opacity: activeSlide > 0 ? 1 : 0.5 }}
-              disabled={activeSlide === 0}
+          {loading ? (
+            <div className="w-full text-center py-12">Loading products...</div>
+          ) : error ? (
+            <div className="w-full text-center py-12 text-red-500">{error}</div>
+          ) : filteredProducts && filteredProducts.length > 0 ? (
+            <Swiper
+              modules={[Navigation, Pagination, A11y]}
+              spaceBetween={24}
+              slidesPerView={1}
+              navigation={{
+                nextEl: '.swiper-button-next',
+                prevEl: '.swiper-button-prev',
+              }}
+              pagination={{ 
+                clickable: true,
+                el: '.swiper-pagination',
+                bulletActiveClass: 'swiper-pagination-bullet-active custom-bullet-active',
+                bulletClass: 'swiper-pagination-bullet custom-bullet',
+              }}
+              breakpoints={{
+                640: {
+                  slidesPerView: 2,
+                },
+                768: {
+                  slidesPerView: 3,
+                },
+                1024: {
+                  slidesPerView: 4,
+                },
+              }}
+              className="mySwiper"
             >
-              <svg className="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-          )}
-          
-          <div 
-            ref={scrollContainerRef}
-            className="flex overflow-x-auto gap-6 pb-6 snap-x snap-mandatory scrollbar-hide cursor-grab active:cursor-grabbing select-none"
-            style={{ 
-              scrollbarWidth: 'none', 
-              msOverflowStyle: 'none',
-              WebkitOverflowScrolling: 'touch',
-              scrollBehavior: 'smooth',
-              overscrollBehavior: 'contain',
-              userSelect: 'none',
-              WebkitUserSelect: 'none',
-              MozUserSelect: 'none',
-              msUserSelect: 'none',
-              touchAction: 'pan-y',
-              willChange: 'transform, scroll-position',
-              backfaceVisibility: 'hidden',
-              transform: 'translateZ(0)'
-            }}
-            onMouseDown={handleMouseDown}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
-            onMouseMove={handleMouseMove}
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
-            onTouchMove={handleTouchMove}
-          >
-            {loading ? (
-              <div className="flex-shrink-0 w-full text-center py-12">Loading products...</div>
-            ) : error ? (
-              <div className="flex-shrink-0 w-full text-center py-12 text-red-500">{error}</div>
-            ) : filteredProducts && filteredProducts.length > 0 ? (
-              filteredProducts.map((product, index) => (
-                <div 
-                  key={product.id} 
-                  className="flex-shrink-0 w-[300px] snap-center transition-transform duration-300 ease-out select-none"
-                  style={{ 
-                    transform: isScrolling ? 'scale(0.98)' : 'scale(1)',
-                    userSelect: 'none',
-                    WebkitUserSelect: 'none',
-                    MozUserSelect: 'none',
-                    msUserSelect: 'none'
-                  }}
-                >
+              {filteredProducts.map((product, index) => (
+                <SwiperSlide key={product.id}>
                   <ProductCard 
                     product={product}
                     backgroundColor={backgroundColors[index % backgroundColors.length]}
                   />
-                </div>
-              ))
-            ) : (
-              <div className="flex-shrink-0 w-full text-center py-12">No products found for this category</div>
-            )}
-          </div>
-
-          {filteredProducts.length > 0 && (
-            <button
-              onClick={() => scrollProducts('right')}
-              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white rounded-full p-3 shadow-lg transition-opacity duration-200 ease-in-out"
-              style={{ opacity: activeSlide < totalPages - 1 ? 1 : 0.5 }}
-              disabled={activeSlide >= totalPages - 1}
-            >
-              <svg className="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
+                </SwiperSlide>
+              ))}
+              <div className="swiper-button-prev !text-gray-800 !w-10 !h-10 !bg-white/80 hover:!bg-white rounded-full shadow-lg !left-0 after:!text-lg"></div>
+              <div className="swiper-button-next !text-gray-800 !w-10 !h-10 !bg-white/80 hover:!bg-white rounded-full shadow-lg !right-0 after:!text-lg"></div>
+            </Swiper>
+          ) : (
+            <div className="w-full text-center py-12">No products found for this category</div>
           )}
+          
+          {/* Custom pagination container */}
+          <div className="swiper-pagination flex justify-center mt-6 gap-3"></div>
         </div>
-
-        {/* Improved scroll indicator dots */}
-        {filteredProducts.length > 0 && !loading && !error && totalPages > 1 && (
-          <div className="flex justify-center mt-6 gap-3">
-            {Array.from({ length: totalPages }).map((_, index) => (
-              <button 
-                key={index}
-                className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
-                  activeSlide === index ? 'bg-[#FF6B6B] w-5' : 'bg-gray-300 hover:bg-gray-400'
-                }`}
-                onClick={() => {
-                  if (scrollContainerRef.current) {
-                    const cardWidth = 300 + 24; // card width + gap
-                    scrollContainerRef.current.scrollTo({
-                      left: index * cardWidth * itemsPerPage,
-                      behavior: 'smooth'
-                    });
-                    setActiveSlide(index);
-                  }
-                }}
-                aria-label={`Go to page ${index + 1}`}
-              />
-            ))}
-          </div>
-        )}
       </div>
+      
+      {/* Custom styles for Swiper */}
+      <style jsx global>{`
+        .swiper-button-next:after, .swiper-button-prev:after {
+          font-size: 18px;
+          font-weight: bold;
+        }
+        
+        .swiper-button-next, .swiper-button-prev {
+          width: 40px;
+          height: 40px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background-color: rgba(255, 255, 255, 0.8);
+          border-radius: 50%;
+          color: #333;
+          transition: background-color 0.3s ease;
+        }
+        
+        .swiper-button-next:hover, .swiper-button-prev:hover {
+          background-color: rgba(255, 255, 255, 1);
+        }
+        
+        .swiper-button-disabled {
+          opacity: 0.5 !important;
+        }
+        
+        .swiper-pagination {
+          position: relative;
+          bottom: 0;
+          margin-top: 24px;
+        }
+
+        .custom-bullet {
+          display: inline-block;
+          width: 10px;
+          height: 10px;
+          border-radius: 50%;
+          background-color: #e5e5e5;
+          margin: 0 6px;
+          transition: all 0.3s ease;
+        }
+
+        .custom-bullet-active {
+          background-color: #FF6B6B;
+          width: 20px;
+          border-radius: 10px;
+        }
+      `}</style>
     </section>
   );
 };

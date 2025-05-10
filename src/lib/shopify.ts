@@ -25,4 +25,72 @@ export async function shopifyFetch({ query, variables }: { query: string; variab
       error: 'Error receiving data',
     };
   }
-} 
+}
+
+const storefrontFetch = async (query: string, variables = {}) => {
+  const response = await fetch(`${SHOPIFY_STORE_DOMAIN}/api/2024-01/graphql.json`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Shopify-Storefront-Access-Token': SHOPIFY_STOREFRONT_ACCESS_TOKEN,
+    },
+    body: JSON.stringify({
+      query,
+      variables,
+    }),
+  });
+
+  const json = await response.json();
+
+  if (json.errors) {
+    console.error('Shopify Storefront API Error:', json.errors);
+    throw new Error('Failed to fetch from Shopify Storefront API');
+  }
+
+  return json.data;
+};
+
+export const searchProducts = async (searchQuery: string) => {
+  const query = `
+    query searchProducts($query: String!) {
+      products(first: 10, query: $query) {
+        edges {
+          node {
+            id
+            title
+            description
+            handle
+            priceRange {
+              minVariantPrice {
+                amount
+                currencyCode
+              }
+            }
+            images(first: 1) {
+              edges {
+                node {
+                  url
+                  altText
+                }
+              }
+            }
+            tags
+            productType
+          }
+        }
+      }
+    }
+  `;
+
+  const data = await storefrontFetch(query, { query: searchQuery });
+  
+  return data.products.edges.map(({ node }: any) => ({
+    id: node.id,
+    name: node.title,
+    description: node.description,
+    price: parseFloat(node.priceRange.minVariantPrice.amount),
+    image: node.images.edges[0]?.node.url || '/placeholder-image.jpg',
+    category: node.productType,
+    handle: node.handle,
+  }));
+}; 
