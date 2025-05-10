@@ -3,7 +3,9 @@ const nextConfig = {
   images: {
     domains: [
       'images.unsplash.com',
-      'cdn.shopify.com'
+      'cdn.shopify.com',
+      'bs.plantnet.org',
+      'bs.floristic.org'
     ],
   },
 }
