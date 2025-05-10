@@ -94,7 +94,7 @@ const ProductCard = ({ product, backgroundColor }: ProductCardProps) => {
         <>
           <span className="font-black">{match[1].trim()}</span>
           {" | "}
-          <span className="font-semibold text-base text-gray-800">{match[3]}</span>
+          <span className="font-medium text-base text-gray-700">{match[3]}</span>
         </>
       );
     }
@@ -103,55 +103,57 @@ const ProductCard = ({ product, backgroundColor }: ProductCardProps) => {
     return (
       <>
         <span className="font-black">{first}</span>
-        {rest.length ? <span className="font-semibold text-base text-gray-800">{' ' + rest.join(' ')}</span> : ''}
+        {rest.length ? <span className="font-medium text-base text-gray-700">{' ' + rest.join(' ')}</span> : ''}
       </>
     );
   };
 
   return (
-    <div className={`rounded-3xl p-6 ${backgroundColor} transition-transform hover:scale-[1.02] flex flex-col min-h-[550px] relative`}>
+    <div className={`rounded-3xl p-5 ${backgroundColor} transition-transform hover:scale-[1.02] flex flex-col h-full relative shadow-sm`}>
       {product.isBestSeller && (
-        <div className="absolute top-4 right-4 bg-[#FF6B6B] text-white px-3 py-1 rounded-full text-sm font-medium z-10">
+        <div className="absolute top-4 right-4 bg-[#FF6B6B] text-white px-3 py-1 rounded-full text-xs font-semibold z-10">
           Best Seller
         </div>
       )}
-      <div className="relative h-[300px] sm:h-[350px] flex-grow mb-4">
+      <div className="relative h-[280px] flex-grow mb-4">
         <Image
           src={product.featuredImage?.url || '/placeholder.png'}
           alt={product.featuredImage?.altText || product.title}
           fill
           className="object-contain mix-blend-multiply"
+          sizes="(max-width: 768px) 280px, 300px"
           priority
         />
       </div>
-      <div className="flex flex-col justify-end">
-        <div className="flex items-center mb-2">
+      <div className="flex flex-col justify-end space-y-2">
+        <div className="flex items-center mb-1">
           <div className="flex">
             {[...Array(5)].map((_, i) => (
-              <svg key={i} className="w-4 h-4 text-[#FF6B6B] fill-current" viewBox="0 0 20 20">
+              <svg key={i} className="w-3.5 h-3.5 text-[#FF6B6B] fill-current" viewBox="0 0 20 20">
                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
               </svg>
             ))}
           </div>
-          <span className="ml-2 text-sm text-gray-600">{product.reviews || 0} reviews</span>
+          <span className="ml-2 text-xs text-gray-600">{product.reviews || 0} reviews</span>
         </div>
         <h3 
-          className="text-xl font-bold text-gray-900 mb-4 line-clamp-2 leading-tight"
+          className="text-lg font-bold text-gray-900 mb-3 line-clamp-2 leading-tight"
           style={{
             display: '-webkit-box',
             WebkitLineClamp: 2,
             WebkitBoxOrient: 'vertical',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
-            minHeight: '56px',
+            minHeight: '48px',
           }}
         >
           {formatProductTitle(product.title)}
         </h3>
-        <div className="flex items-center w-full gap-0">
+        
+        <div className="flex items-center w-full gap-0 mt-auto">
           <div className="w-[50%] relative">
             <select 
-              className="w-full appearance-none bg-white rounded-l-full pl-4 pr-8 py-3 border border-r-0 border-gray-200 text-sm font-medium focus:outline-none focus:border-[#FF6B6B]"
+              className="w-full appearance-none bg-white rounded-l-full pl-3 pr-8 py-2.5 border border-r-0 border-gray-200 text-sm focus:outline-none focus:border-[#FF6B6B]"
               value={selectedVariant.id}
               onChange={(e) => {
                 const variant = product.variants.edges.find(v => v.node.id === e.target.value)?.node;
@@ -170,15 +172,16 @@ const ProductCard = ({ product, backgroundColor }: ProductCardProps) => {
               </svg>
             </div>
           </div>
-          <div className="w-[25%] bg-white border-y border-gray-200 flex items-center justify-center py-3">
+          <div className="w-[25%] bg-white border-y border-gray-200 flex items-center justify-center py-2.5">
             <span className="text-sm font-medium text-gray-900">
               {formatPrice(selectedVariant.price)}
             </span>
           </div>
           <button 
-            className="w-[25%] bg-[#FF6B6B] py-3 rounded-r-full hover:bg-[#ff5252] transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-[25%] bg-[#FF6B6B] py-2.5 rounded-r-full hover:bg-[#ff5252] transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={!selectedVariant || selectedVariant.quantityAvailable < 1}
             onClick={handleAddToCart}
+            aria-label="Add to cart"
           >
             <ShoppingCartIcon className="w-5 h-5 text-white" strokeWidth={2} />
           </button>
@@ -191,9 +194,10 @@ const ProductCard = ({ product, backgroundColor }: ProductCardProps) => {
 const ShopByPlant = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
-  const [activeCategory, setActiveCategory] = useState('POPULAR PLANTS');
+  const [activeCategory, setActiveCategory] = useState('HOUSEPLANTS');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
@@ -688,17 +692,22 @@ const ShopByPlant = () => {
     fetchAllProducts();
   }, []);
 
+  // Filter products based on category and search query
   useEffect(() => {
-    if (activeCategory === 'TROPICAL PLANTS') {
-      const filtered = products.filter(product => 
-        tropicalPlantsList.some(tropicalPlant => {
-          const plantName = tropicalPlant
-            .toLowerCase()
-            .replace(' fertilizer', '')
-            .replace(' food', '')
-            .replace(' plant', '')
-            .trim();
-          
+    // First filter by category
+    let categoryFiltered: Product[] = [];
+    
+    if (activeCategory === 'HOUSEPLANTS') {
+      // Filter for common houseplants
+      const houseplantsList = [
+        'Money Tree', 'Pothos', 'ZZ Plant', 'Monstera', 'Fiddle Leaf Fig',
+        'Peace Lily', 'Snake Plant', 'Philodendron', 'Dracaena', 'Fern',
+        'Orchid', 'African Violet', 'Hoya', 'Ficus', 'Anthurium'
+      ];
+      
+      categoryFiltered = products.filter(product => 
+        houseplantsList.some(houseplant => {
+          const plantName = houseplant.toLowerCase().trim();
           const productTitle = product.title
             .toLowerCase()
             .replace('fertilizer', '')
@@ -709,49 +718,78 @@ const ShopByPlant = () => {
           return productTitle.includes(plantName) || plantName.includes(productTitle);
         })
       );
-      setFilteredProducts(filtered);
-    } else if (activeCategory === 'TREES & SHRUBS') {
-      const filtered = products.filter(product => 
-        treesAndShrubsList.some(treeItem => {
-          const treeName = treeItem
-            .toLowerCase()
-            .replace(' fertilizer', '')
-            .replace(' for trees', '')
-            .replace(' and shrub', '')
-            .trim();
-          
+    } else if (activeCategory === 'GARDEN PLANTS') {
+      // Filter for garden plants
+      const gardenPlantsList = [
+        'Tomato', 'Cucumber', 'Pepper', 'Vegetable', 'Herb',
+        'Rose', 'Flower', 'Grass', 'Lawn', 'Garden',
+        'Berry', 'Strawberry', 'Raspberry', 'Blueberry'
+      ];
+      
+      categoryFiltered = products.filter(product => 
+        gardenPlantsList.some(gardenPlant => {
+          const plantName = gardenPlant.toLowerCase().trim();
           const productTitle = product.title
             .toLowerCase()
             .replace('fertilizer', '')
-            .replace('for trees', '')
-            .replace('and shrub', '')
+            .replace('food', '')
             .trim();
 
-          return productTitle.includes(treeName) || treeName.includes(productTitle);
+          return productTitle.includes(plantName) || plantName.includes(productTitle);
         })
       );
-      setFilteredProducts(filtered);
-    } else if (activeCategory === 'ALL') {
-      setFilteredProducts(products);
-    } else if (activeCategory === 'POPULAR PLANTS') {
-      // Filter and sort best sellers
-      const bestSellers = products
-        .filter(product => product.isBestSeller)
-        .sort((a, b) => (b.popularityScore || 0) - (a.popularityScore || 0));
+    } else if (activeCategory === 'HYDRO & AQUATIC') {
+      // Filter for hydroponic and aquatic plants
+      const hydroAquaticList = [
+        'Hydroponic', 'Aquatic', 'Water Plant', 'Lily Pad',
+        'Algae', 'Aquarium', 'Water Garden', 'Pond',
+        'Hydroculture', 'Water Lily', 'Lotus', 'Water Lettuce'
+      ];
       
-      // If we have less than 8 best sellers, add some random products
-      if (bestSellers.length < 8) {
-        const remainingProducts = products
-          .filter(product => !product.isBestSeller)
-          .sort((a, b) => (b.popularityScore || 0) - (a.popularityScore || 0))
-          .slice(0, 8 - bestSellers.length);
-        
-        setFilteredProducts([...bestSellers, ...remainingProducts]);
-      } else {
-        setFilteredProducts(bestSellers);
-      }
+      categoryFiltered = products.filter(product => 
+        hydroAquaticList.some(hydroPlant => {
+          const plantName = hydroPlant.toLowerCase().trim();
+          const productTitle = product.title
+            .toLowerCase()
+            .trim();
+
+          return productTitle.includes(plantName) || plantName.includes(productTitle);
+        })
+      );
+    } else if (activeCategory === 'SUPPLEMENTS') {
+      // Filter for supplements and additives
+      const supplementsList = [
+        'Supplement', 'Additive', 'Booster', 'Vitamin',
+        'Mineral', 'Nutrient', 'Enhancement', 'Growth',
+        'Root Stimulator', 'Bloom Booster'
+      ];
+      
+      categoryFiltered = products.filter(product => 
+        supplementsList.some(supplement => {
+          const suppName = supplement.toLowerCase().trim();
+          const productTitle = product.title
+            .toLowerCase()
+            .trim();
+
+          return productTitle.includes(suppName) || suppName.includes(productTitle);
+        })
+      );
+    } else if (activeCategory === 'ALL') {
+      categoryFiltered = products;
     }
-  }, [activeCategory, products]);
+    
+    // Then filter by search query if one exists
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      const searchFiltered = categoryFiltered.filter(product => 
+        product.title.toLowerCase().includes(query)
+      );
+      setFilteredProducts(searchFiltered);
+    } else {
+      setFilteredProducts(categoryFiltered);
+    }
+    
+  }, [activeCategory, products, searchQuery]);
 
   useEffect(() => {
     // Add scroll event listener
@@ -774,44 +812,80 @@ const ShopByPlant = () => {
   }, [isDragging, isScrolling]);
 
   const backgroundColors = [
-    "bg-[#E8F3EA]",
-    "bg-[#E8F3F1]",
-    "bg-[#E8F0F3]",
-    "bg-[#F3E8EA]"
+    "bg-[#F2F7F2]", // Light mint green
+    "bg-[#F7F2F2]", // Light pink
+    "bg-[#F2F5F7]", // Light blue
+    "bg-[#F7F7F2]"  // Light yellow
   ];
 
   // Calculate number of pages
   const itemsPerPage = 4;
   const totalPages = Math.ceil((filteredProducts?.length || 0) / itemsPerPage);
 
+  // Handle search input change
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    // Reset to first slide when search changes
+    setActiveSlide(0);
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollLeft = 0;
+    }
+  };
+
   return (
     <section className="w-full bg-[#FDF6EF] px-4 sm:px-6 py-12 sm:py-16">
       <div className="max-w-[1400px] mx-auto">
-        <h2 className="text-[#FF6B6B] text-4xl sm:text-5xl font-bold mb-4">Shop by Plant</h2>
-        <p className="text-2xl sm:text-3xl font-medium mb-8">What are you growing?</p>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+          <div>
+            <h2 className="text-[#FF6B6B] text-4xl sm:text-5xl font-bold mb-2">Shop by Plant</h2>
+            <p className="text-xl sm:text-2xl font-medium text-gray-700">What are you growing?</p>
+          </div>
+          
+          <div className="mt-4 md:mt-0">
+            <div className="relative">
+              <input 
+                type="text"
+                placeholder="SEARCH"
+                value={searchQuery}
+                onChange={handleSearchChange}
+                className="bg-white border border-gray-200 rounded-full px-4 py-2 pl-10 pr-4 w-full max-w-[250px] outline-none focus:border-[#FF6B6B] text-sm"
+                aria-label="Search products"
+              />
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
         
         {/* Category buttons */}
-        <div className="flex flex-wrap gap-4 mb-12">
+        <div className="flex flex-wrap items-center gap-3 mb-10">
           <button 
-            className={`${activeCategory === 'POPULAR PLANTS' ? 'bg-[#8B7355] text-white' : 'border-2 border-[#8B7355] text-[#8B7355]'} px-6 py-3 rounded-full font-medium hover:bg-[#8B7355] hover:text-white transition-colors`}
-            onClick={() => setActiveCategory('POPULAR PLANTS')}
+            className={`${activeCategory === 'HOUSEPLANTS' ? 'bg-[#8B7355] text-white' : 'bg-[#E8E0D4] text-[#8B7355]'} px-6 py-2.5 rounded-full font-medium transition-colors hover:bg-[#8B7355] hover:text-white`}
+            onClick={() => setActiveCategory('HOUSEPLANTS')}
           >
-            POPULAR PLANTS
+            HOUSEPLANTS
           </button>
           <button 
-            className={`${activeCategory === 'TROPICAL PLANTS' ? 'bg-[#8B7355] text-white' : 'border-2 border-[#8B7355] text-[#8B7355]'} px-6 py-3 rounded-full font-medium hover:bg-[#8B7355] hover:text-white transition-colors`}
-            onClick={() => setActiveCategory('TROPICAL PLANTS')}
+            className={`${activeCategory === 'GARDEN PLANTS' ? 'bg-[#8B7355] text-white' : 'bg-[#E8E0D4] text-[#8B7355]'} px-6 py-2.5 rounded-full font-medium transition-colors hover:bg-[#8B7355] hover:text-white`}
+            onClick={() => setActiveCategory('GARDEN PLANTS')}
           >
-            TROPICAL PLANTS
+            GARDEN PLANTS
           </button>
           <button 
-            className={`${activeCategory === 'TREES & SHRUBS' ? 'bg-[#8B7355] text-white' : 'border-2 border-[#8B7355] text-[#8B7355]'} px-6 py-3 rounded-full font-medium hover:bg-[#8B7355] hover:text-white transition-colors`}
-            onClick={() => setActiveCategory('TREES & SHRUBS')}
+            className={`${activeCategory === 'HYDRO & AQUATIC' ? 'bg-[#8B7355] text-white' : 'bg-[#E8E0D4] text-[#8B7355]'} px-6 py-2.5 rounded-full font-medium transition-colors hover:bg-[#8B7355] hover:text-white`}
+            onClick={() => setActiveCategory('HYDRO & AQUATIC')}
           >
-            TREES & SHRUBS
+            HYDRO & AQUATIC
           </button>
           <button 
-            className="bg-[#FF6B6B] text-white px-6 py-3 rounded-full font-medium hover:bg-[#ff5252] transition-colors"
+            className={`${activeCategory === 'SUPPLEMENTS' ? 'bg-[#8B7355] text-white' : 'bg-[#E8E0D4] text-[#8B7355]'} px-6 py-2.5 rounded-full font-medium transition-colors hover:bg-[#8B7355] hover:text-white`}
+            onClick={() => setActiveCategory('SUPPLEMENTS')}
+          >
+            SUPPLEMENTS
+          </button>
+          <button 
+            className="bg-[#FF6B6B] text-white px-6 py-2.5 rounded-full font-medium hover:bg-[#ff5252] transition-colors"
             onClick={() => setActiveCategory('ALL')}
           >
             SHOP ALL
@@ -846,10 +920,10 @@ const ShopByPlant = () => {
               WebkitUserSelect: 'none',
               MozUserSelect: 'none',
               msUserSelect: 'none',
-              touchAction: 'pan-y', // Allow vertical scrolling but handle horizontal ourselves
-              willChange: 'transform, scroll-position', // Optimize for animations
-              backfaceVisibility: 'hidden', // Reduce flickering
-              transform: 'translateZ(0)' // Force GPU acceleration
+              touchAction: 'pan-y',
+              willChange: 'transform, scroll-position',
+              backfaceVisibility: 'hidden',
+              transform: 'translateZ(0)'
             }}
             onMouseDown={handleMouseDown}
             onMouseUp={handleMouseUp}

@@ -6,6 +6,7 @@ import AnnouncementBanner from "@/components/AnnouncementBanner";
 import { CartProvider } from "@/context/CartContext";
 import { Toaster } from "react-hot-toast";
 import CartSlideOver from "@/components/CartSlideOver";
+import Footer from "@/components/Footer";
 
 interface CartUIContextType {
   isCartOpen: boolean;
@@ -39,6 +40,7 @@ export default function Template({
         <AnnouncementBanner />
         <Navbar onCartClick={openCart} />
         {children}
+        <Footer />
         <CartSlideOver isOpen={isCartOpen} setIsOpen={setIsCartOpen} />
         <Toaster position="bottom-right" />
       </CartUIContext.Provider>
