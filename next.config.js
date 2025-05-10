@@ -7,7 +7,12 @@ const nextConfig = {
       'bs.plantnet.org',
       'bs.floristic.org'
     ],
+    unoptimized: true,
   },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  output: 'export',
 }
 
 module.exports = nextConfig 

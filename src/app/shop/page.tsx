@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from 'react';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -607,9 +608,9 @@ const ProductSection = ({ title, products, id }: { title: string; products: Prod
   );
 };
 
-export default function ShopPage() {
+function ShopPageContent() {
   const searchParams = useSearchParams();
-  const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'houseplants');
+  const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -877,5 +878,17 @@ export default function ShopPage() {
         </div>
       </section>
     </main>
+  );
+}
+
+export default function ShopPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex justify-center items-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+      </div>
+    }>
+      <ShopPageContent />
+    </Suspense>
   );
 }
