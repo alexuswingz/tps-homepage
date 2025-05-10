@@ -4,15 +4,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-
-interface Product {
-  id: number;
-  name: string;
-  description: string;
-  price: number;
-  image: string;
-  category: string;
-}
+import type { Product } from '@/types/shopify';
 
 export default function SearchResults() {
   const searchParams = useSearchParams();
@@ -75,22 +67,24 @@ export default function SearchResults() {
         {products.map((product) => (
           <Link
             key={product.id}
-            href={`/product/${product.id}`}
+            href={`/product/${product.handle}`}
             className="group"
           >
             <div className="bg-white rounded-lg shadow-sm overflow-hidden transition-transform duration-200 hover:shadow-md">
               <div className="relative aspect-square">
                 <Image
-                  src={product.image}
-                  alt={product.name}
+                  src={product.featuredImage.url}
+                  alt={product.featuredImage.altText}
                   fill
                   className="object-cover group-hover:scale-105 transition-transform duration-200"
                 />
               </div>
               <div className="p-4">
-                <h3 className="font-medium text-gray-900">{product.name}</h3>
+                <h3 className="font-medium text-gray-900">{product.title}</h3>
                 <p className="text-sm text-gray-600 mt-1">{product.description}</p>
-                <p className="text-[#FF6B6B] font-medium mt-2">${product.price.toFixed(2)}</p>
+                <p className="text-[#FF6B6B] font-medium mt-2">
+                  ${parseFloat(product.variants.edges[0].node.price.amount).toFixed(2)}
+                </p>
               </div>
             </div>
           </Link>

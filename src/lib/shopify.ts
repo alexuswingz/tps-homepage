@@ -60,13 +60,11 @@ export const searchProducts = async (searchQuery: string) => {
             title
             description
             handle
-            priceRange {
-              minVariantPrice {
-                amount
-                currencyCode
-              }
+            featuredImage {
+              url
+              altText
             }
-            images(first: 1) {
+            images(first: 5) {
               edges {
                 node {
                   url
@@ -74,8 +72,27 @@ export const searchProducts = async (searchQuery: string) => {
                 }
               }
             }
-            tags
-            productType
+            variants(first: 1) {
+              edges {
+                node {
+                  id
+                  title
+                  price {
+                    amount
+                    currencyCode
+                  }
+                  compareAtPrice {
+                    amount
+                    currencyCode
+                  }
+                  selectedOptions {
+                    name
+                    value
+                  }
+                  quantityAvailable
+                }
+              }
+            }
           }
         }
       }
@@ -86,11 +103,29 @@ export const searchProducts = async (searchQuery: string) => {
   
   return data.products.edges.map(({ node }: any) => ({
     id: node.id,
-    name: node.title,
+    title: node.title,
     description: node.description,
-    price: parseFloat(node.priceRange.minVariantPrice.amount),
-    image: node.images.edges[0]?.node.url || '/placeholder-image.jpg',
-    category: node.productType,
     handle: node.handle,
+    featuredImage: {
+      url: node.featuredImage?.url || '/placeholder-image.jpg',
+      altText: node.featuredImage?.altText || node.title
+    },
+    images: {
+      edges: node.images?.edges || []
+    },
+    variants: {
+      edges: node.variants?.edges || [{
+        node: {
+          id: 'default',
+          title: 'Default',
+          price: {
+            amount: '0',
+            currencyCode: 'USD'
+          },
+          selectedOptions: [],
+          quantityAvailable: 0
+        }
+      }]
+    }
   }));
 }; 

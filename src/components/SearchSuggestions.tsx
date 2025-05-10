@@ -2,16 +2,7 @@ import { useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-
-interface Product {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  image: string;
-  category: string;
-  handle: string;
-}
+import type { Product } from '@/types/shopify';
 
 interface SearchSuggestionsProps {
   products: Product[];
@@ -71,16 +62,18 @@ const SearchSuggestions = ({ products, isVisible, onClose, searchQuery }: Search
             >
               <div className="relative w-16 h-16 flex-shrink-0">
                 <Image
-                  src={product.image}
-                  alt={product.name}
+                  src={product.featuredImage.url}
+                  alt={product.featuredImage.altText}
                   fill
                   className="object-cover rounded-md"
                 />
               </div>
               <div className="flex-1 min-w-0">
-                <h4 className="text-sm font-medium text-gray-900 truncate">{product.name}</h4>
+                <h4 className="text-sm font-medium text-gray-900 truncate">{product.title}</h4>
                 <p className="text-sm text-gray-500 truncate">{product.description}</p>
-                <p className="text-sm font-medium text-[#FF6B6B]">${product.price.toFixed(2)}</p>
+                <p className="text-sm font-medium text-[#FF6B6B]">
+                  ${parseFloat(product.variants.edges[0].node.price.amount).toFixed(2)}
+                </p>
               </div>
             </Link>
           ))}

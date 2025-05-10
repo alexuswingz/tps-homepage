@@ -6,15 +6,7 @@ import { useState, useRef, FormEvent, useEffect } from 'react';
 import { useCart } from '@/context/CartContext';
 import { useRouter } from 'next/navigation';
 import SearchSuggestions from './SearchSuggestions';
-
-interface Product {
-  id: number;
-  name: string;
-  description: string;
-  price: number;
-  image: string;
-  category: string;
-}
+import type { Product } from '@/types/shopify';
 
 interface NavbarProps {
   onCartClick: () => void;
@@ -77,7 +69,6 @@ const Navbar = ({ onCartClick }: NavbarProps) => {
 
   const handleSearchInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    console.log('Search input changed:', value); // Debug log
     setSearchQuery(value);
     setShowSuggestions(true);
 
@@ -90,13 +81,11 @@ const Navbar = ({ onCartClick }: NavbarProps) => {
     if (value.length >= 2) {
       setIsSearching(true);
       try {
-        console.log('Fetching search results for:', value); // Debug log
         const response = await fetch(`/api/search/suggestions?q=${encodeURIComponent(value)}`);
         if (!response.ok) throw new Error('Search failed');
         const data = await response.json();
-        console.log('Search results:', data.products); // Debug log
         setSearchResults(data.products);
-        setShowSuggestions(true); // Explicitly set to show suggestions
+        setShowSuggestions(true);
       } catch (error) {
         console.error('Search error:', error);
         setSearchResults([]);
@@ -278,10 +267,7 @@ const Navbar = ({ onCartClick }: NavbarProps) => {
                   placeholder="Search products..."
                   value={searchQuery}
                   onChange={handleSearchInputChange}
-                  onFocus={() => {
-                    console.log('Search input focused'); // Debug log
-                    setShowSuggestions(true);
-                  }}
+                  onFocus={() => setShowSuggestions(true)}
                   className="w-full pl-10 pr-4 py-2 rounded-full bg-white border border-gray-200 focus:outline-none focus:border-[#FF6B6B] text-sm"
                 />
                 <button
@@ -305,7 +291,6 @@ const Navbar = ({ onCartClick }: NavbarProps) => {
                 products={searchResults}
                 isVisible={showSuggestions && searchQuery.length >= 2}
                 onClose={() => {
-                  console.log('Closing suggestions'); // Debug log
                   setShowSuggestions(false);
                 }}
                 searchQuery={searchQuery}
