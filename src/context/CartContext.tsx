@@ -18,7 +18,7 @@ interface CartItem {
 
 interface CartContextType {
   cart: CartItem[];
-  addToCart: (item: Omit<CartItem, 'quantity'>) => void;
+  addToCart: (item: Omit<CartItem, 'quantity'> & { quantity?: number }) => void;
   removeFromCart: (variantId: string) => void;
   updateQuantity: (variantId: string, quantity: number) => void;
   clearCart: () => void;
@@ -66,21 +66,33 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [cart, isInitialized]);
 
-  const addToCart = (item: Omit<CartItem, 'quantity'>) => {
+  const addToCart = (item: Omit<CartItem, 'quantity'> & { quantity?: number }) => {
     console.log('addToCart called with:', item);
+    
+    const quantityToAdd = item.quantity || 1; // Default to 1 if quantity is not specified
     
     setCart(prevCart => {
       const existingItemIndex = prevCart.findIndex(cartItem => cartItem.variantId === item.variantId);
       
       if (existingItemIndex >= 0) {
-        // Item exists, increment quantity
+        // Item exists, add the quantity
         const newCart = [...prevCart];
-        newCart[existingItemIndex].quantity += 1;
+        newCart[existingItemIndex].quantity += quantityToAdd;
         console.log('Updated existing item in cart:', newCart);
         return newCart;
       } else {
-        // Item doesn't exist, add new item
-        const newCart = [...prevCart, { ...item, quantity: 1 }];
+        // Item doesn't exist, add new item with specified quantity
+        const newItem = { 
+          variantId: item.variantId,
+          productId: item.productId,
+          title: item.title,
+          variantTitle: item.variantTitle,
+          price: item.price,
+          image: item.image,
+          quantity: quantityToAdd 
+        };
+        
+        const newCart = [...prevCart, newItem];
         console.log('Added new item to cart:', newCart);
         return newCart;
       }

@@ -212,14 +212,36 @@ const ShopByPlant = () => {
   const lastScrollLeft = useRef<number>(0);
   const scrollAnimationFrame = useRef<number | null>(null);
 
-  const tropicalPlantsList = [
+  const houseplantsList = [
     'Money Tree Fertilizer',
+    'Jade Fertilizer',
+    'Christmas Cactus Fertilizer',
+    'Cactus Fertilizer',
+    'Succulent Plant Food',
+    'Bonsai Fertilizer',
+    'Air Plant Fertilizer',
+    'Snake Plant Fertilizer',
+    'House Plant Food',
+    'Mycorrhizal Fungi for Houseplants',
+    'Granular Houseplant Food',
+    'Granular Monstera Fertilizer',
+    'Granular Lemon Tree Fertilizer',
+    'Granular Indoor Plant Food',
+    'Granular Fig Tree Fertilizer',
+    'Granular Bonsai Fertilizer',
+    'Houseplant Root Supplement',
+    'Succulent Root Supplement',
+    'Fig Root Supplement',
+    'Orchid Root Supplement',
+    'Indoor Plant Food',
+    'Instant Plant Food',
     'Ficus Fertilizer',
     'Banana Tree Fertilizer',
     'Philodendron Fertilizer',
     'Fern Fertilizer',
     'Dracaena Fertilizer',
     'Bird of Paradise Fertilizer',
+    'Aloe Vera Fertilizer',
     'ZZ Plant Fertilizer',
     'Tropical Plant Fertilizer',
     'Pothos Fertilizer',
@@ -236,9 +258,112 @@ const ShopByPlant = () => {
     'Elephant Ear Fertilizer',
     'Hoya Fertilizer',
     'Lucky Bamboo Fertilizer',
-    'Orchid Fertilizer',
+    'Orchid Plant Food',
     'Peace Lily Fertilizer',
     'Pitcher Plant Food'
+  ];
+
+  const gardenPlantsList = [
+    'Bougainvillea Fertilizer',
+    'Camellia Fertilizer',
+    'Cut Flower Food',
+    'Desert Rose Fertilizer',
+    'Flowering Fertilizer',
+    'Rose Bush Fertilizer',
+    'Rose Fertilizer',
+    'Plumeria Fertilizer',
+    'Hydrangea Fertilizer',
+    'Hibiscus Fertilizer',
+    'Azalea Fertilizer',
+    'Gardenia Fertilizer',
+    'Rhododendron Fertilizer',
+    'Petunia Fertilizer',
+    'Geranium Fertilizer',
+    'Hanging Basket Plant Food',
+    'Flowering Plant Food',
+    'Daffodil Bulb Fertilizer',
+    'Tulip Bulb Fertilizer',
+    'Mum Fertilizer',
+    'Ixora Fertilizer',
+    'Bulb Fertilizer',
+    'Lilac Bush Fertilizer',
+    'Bloom Fertilizer',
+    'Berry Fertilizer',
+    'Pepper Fertilizer',
+    'Tomato Fertilizer',
+    'Strawberry Fertilizer',
+    'Blueberry Fertilizer',
+    'Herbs and Leafy Greens Plant Food',
+    'Vegetable Fertilizer',
+    'Pumpkin Fertilizer',
+    'Potato Fertilizer',
+    'Garlic Fertilizer',
+    'Water Soluble Fertilizer',
+    'Garden Fertilizer',
+    'Plant Food Outdoor',
+    'Plant Food',
+    'Plant Fertilizer',
+    'All Purpose Fertilizer',
+    'All Purpose NPK Fertilizer',
+    'Starter Fertilizer',
+    '10-10-10 for General Use',
+    '10-10-10 for Vegetables',
+    '10-10-10 for Plants',
+    'Fall Fertilizer',
+    'Winter Fertilizer',
+    'Ivy Plant Food',
+    'Lawn Fertilizer',
+    'Mycorrhizal Fungi for Trees',
+    'Mycorrhizal Fungi for Palm Trees',
+    'Mycorrhizal Fungi for Gardens',
+    'Mycorrhizal Fungi for Citrus Trees',
+    'Mycorrhizal Fungi',
+    'Root Booster for Plants',
+    'Soil Microbes for Gardening',
+    'Trichoderma for Plants'
+  ];
+
+  const hydroAquaticList = [
+    'Liquid Plant Food',
+    'Lotus Fertilizer',
+    'Aquarium Plant Fertilizer',
+    'Aquatic Plant Fertilizer',
+    'Water Garden Fertilizer',
+    'Water Plant Fertilizer',
+    'Hydroponic Nutrients',
+    'Hydroponic Plant Food'
+  ];
+
+  const supplementsList = [
+    'Fish Emulsion Fertilizer',
+    'Fish Fertilizer',
+    'Silica for Plants',
+    'Cal-Mag Fertilizer',
+    'Seaweed Fertilizer',
+    'Calcium for Plants',
+    'Calcium Nitrate',
+    'Worm Castings Concentrate',
+    'Compost Starter and Accelerator',
+    'Compost Tea',
+    'Sulfur for Plants',
+    'Phosphorus Fertilizer',
+    'Potassium Fertilizer',
+    'Ferrous Sulfate For Plants',
+    'Urea Fertilizer',
+    'Magnesium for Plants',
+    'Potassium Nitrate Fertilizer',
+    'Ammonium Nitrate Fertilizer',
+    'Potassium Sulfate Fertilizer',
+    'Sulfate Of Potash',
+    'Potash Fertilizer',
+    'Muriate Of Potash',
+    'Phosphorus and Potassium Fertilizer',
+    'Compost Tea for Plants',
+    'Kelp Meal Fertilizer',
+    'Nitrogen Fertilizer',
+    'Seaweed Extract for Plants',
+    'pH Down',
+    'pH Up'
   ];
 
   const treesAndShrubsList = [
@@ -266,9 +391,11 @@ const ShopByPlant = () => {
     'Oak Tree Fertilizer',
     'Orange Tree Fertilizer',
     'Pine Tree Fertilizer',
+    'Root Stimulator for Trees',
     'Sago Palm Fertilizer',
     'Shrub Fertilizer',
-    'Tree And Shrub Fertilizer'
+    'Tree And Shrub Fertilizer',
+    'Jasmine Fertilizer'
   ];
 
   const scrollProducts = (direction: 'left' | 'right') => {
@@ -698,80 +825,35 @@ const ShopByPlant = () => {
     let categoryFiltered: Product[] = [];
     
     if (activeCategory === 'HOUSEPLANTS') {
-      // Filter for common houseplants
-      const houseplantsList = [
-        'Money Tree', 'Pothos', 'ZZ Plant', 'Monstera', 'Fiddle Leaf Fig',
-        'Peace Lily', 'Snake Plant', 'Philodendron', 'Dracaena', 'Fern',
-        'Orchid', 'African Violet', 'Hoya', 'Ficus', 'Anthurium'
-      ];
-      
+      // Filter for houseplants using the exact product names
       categoryFiltered = products.filter(product => 
         houseplantsList.some(houseplant => {
-          const plantName = houseplant.toLowerCase().trim();
-          const productTitle = product.title
-            .toLowerCase()
-            .replace('fertilizer', '')
-            .replace('food', '')
-            .replace('plant', '')
-            .trim();
-
-          return productTitle.includes(plantName) || plantName.includes(productTitle);
+          const productTitle = product.title.trim();
+          return productTitle === houseplant || productTitle.includes(houseplant);
         })
       );
     } else if (activeCategory === 'GARDEN PLANTS') {
-      // Filter for garden plants
-      const gardenPlantsList = [
-        'Tomato', 'Cucumber', 'Pepper', 'Vegetable', 'Herb',
-        'Rose', 'Flower', 'Grass', 'Lawn', 'Garden',
-        'Berry', 'Strawberry', 'Raspberry', 'Blueberry'
-      ];
-      
+      // Filter for garden plants using exact product names
       categoryFiltered = products.filter(product => 
         gardenPlantsList.some(gardenPlant => {
-          const plantName = gardenPlant.toLowerCase().trim();
-          const productTitle = product.title
-            .toLowerCase()
-            .replace('fertilizer', '')
-            .replace('food', '')
-            .trim();
-
-          return productTitle.includes(plantName) || plantName.includes(productTitle);
+          const productTitle = product.title.trim();
+          return productTitle === gardenPlant || productTitle.includes(gardenPlant);
         })
       );
     } else if (activeCategory === 'HYDRO & AQUATIC') {
-      // Filter for hydroponic and aquatic plants
-      const hydroAquaticList = [
-        'Hydroponic', 'Aquatic', 'Water Plant', 'Lily Pad',
-        'Algae', 'Aquarium', 'Water Garden', 'Pond',
-        'Hydroculture', 'Water Lily', 'Lotus', 'Water Lettuce'
-      ];
-      
+      // Filter for hydroponic and aquatic plants using exact product names
       categoryFiltered = products.filter(product => 
         hydroAquaticList.some(hydroPlant => {
-          const plantName = hydroPlant.toLowerCase().trim();
-          const productTitle = product.title
-            .toLowerCase()
-            .trim();
-
-          return productTitle.includes(plantName) || plantName.includes(productTitle);
+          const productTitle = product.title.trim();
+          return productTitle === hydroPlant || productTitle.includes(hydroPlant);
         })
       );
     } else if (activeCategory === 'SUPPLEMENTS') {
-      // Filter for supplements and additives
-      const supplementsList = [
-        'Supplement', 'Additive', 'Booster', 'Vitamin',
-        'Mineral', 'Nutrient', 'Enhancement', 'Growth',
-        'Root Stimulator', 'Bloom Booster'
-      ];
-      
+      // Filter for supplements and additives using exact product names
       categoryFiltered = products.filter(product => 
         supplementsList.some(supplement => {
-          const suppName = supplement.toLowerCase().trim();
-          const productTitle = product.title
-            .toLowerCase()
-            .trim();
-
-          return productTitle.includes(suppName) || suppName.includes(productTitle);
+          const productTitle = product.title.trim();
+          return productTitle === supplement || productTitle.includes(supplement);
         })
       );
     } else if (activeCategory === 'ALL') {
@@ -1004,4 +1086,4 @@ const ShopByPlant = () => {
   );
 };
 
-export default ShopByPlant; 
+export default ShopByPlant;
