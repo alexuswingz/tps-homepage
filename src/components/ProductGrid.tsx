@@ -10,7 +10,7 @@ interface ProductGridProps {
 const ProductGrid = ({ products, onAddToCart }: ProductGridProps) => {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      {products.map((product) => (
+      {products.map((product, index) => (
         <div
           key={product.id}
           className="group bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-200 transform hover:-translate-y-1"
@@ -18,10 +18,15 @@ const ProductGrid = ({ products, onAddToCart }: ProductGridProps) => {
           <Link href={`/product/${product.handle}`}>
             <div className="relative aspect-square">
               <Image
-                src={product.image}
-                alt={product.imageAlt || product.title}
+                src={product.featuredImage.url}
+                alt={product.featuredImage.altText || product.title}
                 fill
+                sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                 className="object-cover"
+                priority={index < 4}
+                loading={index < 8 ? 'eager' : 'lazy'}
+                placeholder="blur"
+                blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+P+/HgAEtAJJXIDTjwAAAABJRU5ErkJggg=="
               />
             </div>
             <div className="p-6">
@@ -33,7 +38,7 @@ const ProductGrid = ({ products, onAddToCart }: ProductGridProps) => {
               </p>
               <div className="flex items-center justify-between">
                 <span className="text-2xl font-bold text-[#4CAF50]">
-                  ${parseFloat(product.price).toFixed(2)}
+                  ${parseFloat(product.variants.edges[0]?.node.price.amount).toFixed(2)}
                 </span>
               </div>
             </div>

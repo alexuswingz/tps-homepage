@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ShoppingCartIcon } from '@heroicons/react/24/outline';
@@ -201,364 +201,160 @@ const ProductCard = ({ product, backgroundColor }: ProductCardProps) => {
 
 const ShopByPlant = () => {
   const [products, setProducts] = useState<Product[]>([]);
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
-  const [activeCategory, setActiveCategory] = useState('HOUSEPLANTS');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState('all');
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [cursor, setCursor] = useState<string | null>(null);
+  const loadMoreRef = useRef(null);
 
-  const houseplantsList = [
-    'Money Tree Fertilizer',
-    'Jade Fertilizer',
-    'Christmas Cactus Fertilizer',
-    'Cactus Fertilizer',
-    'Succulent Plant Food',
-    'Bonsai Fertilizer',
-    'Air Plant Fertilizer',
-    'Snake Plant Fertilizer',
-    'House Plant Food',
-    'Mycorrhizal Fungi for Houseplants',
-    'Granular Houseplant Food',
-    'Granular Monstera Fertilizer',
-    'Granular Lemon Tree Fertilizer',
-    'Granular Indoor Plant Food',
-    'Granular Fig Tree Fertilizer',
-    'Granular Bonsai Fertilizer',
-    'Houseplant Root Supplement',
-    'Succulent Root Supplement',
-    'Fig Root Supplement',
-    'Orchid Root Supplement',
-    'Indoor Plant Food',
-    'Instant Plant Food',
-    'Ficus Fertilizer',
-    'Banana Tree Fertilizer',
-    'Philodendron Fertilizer',
-    'Fern Fertilizer',
-    'Dracaena Fertilizer',
-    'Bird of Paradise Fertilizer',
-    'Aloe Vera Fertilizer',
-    'ZZ Plant Fertilizer',
-    'Tropical Plant Fertilizer',
-    'Pothos Fertilizer',
-    'Bromeliad Fertilizer',
-    'Fiddle Leaf Fig Plant Food',
-    'Monstera Plant Food',
-    'African Violet Fertilizer',
-    'Alocasia Fertilizer',
-    'Anthurium Fertilizer',
-    'Bamboo Fertilizer',
-    'Brazilian Wood Plant Food',
-    'Carnivorous Plant Food',
-    'Curry Leaf Plant Fertilizer',
-    'Elephant Ear Fertilizer',
-    'Hoya Fertilizer',
-    'Lucky Bamboo Fertilizer',
-    'Orchid Plant Food',
-    'Peace Lily Fertilizer',
-    'Pitcher Plant Food'
-  ];
+  // Filter products based on active tab
+  const filteredProducts = useMemo(() => {
+    if (activeTab === 'all') return products;
 
-  const gardenPlantsList = [
-    'Bougainvillea Fertilizer',
-    'Camellia Fertilizer',
-    'Cut Flower Food',
-    'Desert Rose Fertilizer',
-    'Flowering Fertilizer',
-    'Rose Bush Fertilizer',
-    'Rose Fertilizer',
-    'Plumeria Fertilizer',
-    'Hydrangea Fertilizer',
-    'Hibiscus Fertilizer',
-    'Azalea Fertilizer',
-    'Gardenia Fertilizer',
-    'Rhododendron Fertilizer',
-    'Petunia Fertilizer',
-    'Geranium Fertilizer',
-    'Hanging Basket Plant Food',
-    'Flowering Plant Food',
-    'Daffodil Bulb Fertilizer',
-    'Tulip Bulb Fertilizer',
-    'Mum Fertilizer',
-    'Ixora Fertilizer',
-    'Bulb Fertilizer',
-    'Lilac Bush Fertilizer',
-    'Bloom Fertilizer',
-    'Berry Fertilizer',
-    'Pepper Fertilizer',
-    'Tomato Fertilizer',
-    'Strawberry Fertilizer',
-    'Blueberry Fertilizer',
-    'Herbs and Leafy Greens Plant Food',
-    'Vegetable Fertilizer',
-    'Pumpkin Fertilizer',
-    'Potato Fertilizer',
-    'Garlic Fertilizer',
-    'Water Soluble Fertilizer',
-    'Garden Fertilizer',
-    'Plant Food Outdoor',
-    'Plant Food',
-    'Plant Fertilizer',
-    'All Purpose Fertilizer',
-    'All Purpose NPK Fertilizer',
-    'Starter Fertilizer',
-    '10-10-10 for General Use',
-    '10-10-10 for Vegetables',
-    '10-10-10 for Plants',
-    'Fall Fertilizer',
-    'Winter Fertilizer',
-    'Ivy Plant Food',
-    'Lawn Fertilizer',
-    'Mycorrhizal Fungi for Trees',
-    'Mycorrhizal Fungi for Palm Trees',
-    'Mycorrhizal Fungi for Gardens',
-    'Mycorrhizal Fungi for Citrus Trees',
-    'Mycorrhizal Fungi',
-    'Root Booster for Plants',
-    'Soil Microbes for Gardening',
-    'Trichoderma for Plants'
-  ];
-
-  const hydroAquaticList = [
-    'Liquid Plant Food',
-    'Lotus Fertilizer',
-    'Aquarium Plant Fertilizer',
-    'Aquatic Plant Fertilizer',
-    'Water Garden Fertilizer',
-    'Water Plant Fertilizer',
-    'Hydroponic Nutrients',
-    'Hydroponic Plant Food'
-  ];
-
-  const supplementsList = [
-    'Fish Emulsion Fertilizer',
-    'Fish Fertilizer',
-    'Silica for Plants',
-    'Cal-Mag Fertilizer',
-    'Seaweed Fertilizer',
-    'Calcium for Plants',
-    'Calcium Nitrate',
-    'Worm Castings Concentrate',
-    'Compost Starter and Accelerator',
-    'Compost Tea',
-    'Sulfur for Plants',
-    'Phosphorus Fertilizer',
-    'Potassium Fertilizer',
-    'Ferrous Sulfate For Plants',
-    'Urea Fertilizer',
-    'Magnesium for Plants',
-    'Potassium Nitrate Fertilizer',
-    'Ammonium Nitrate Fertilizer',
-    'Potassium Sulfate Fertilizer',
-    'Sulfate Of Potash',
-    'Potash Fertilizer',
-    'Muriate Of Potash',
-    'Phosphorus and Potassium Fertilizer',
-    'Compost Tea for Plants',
-    'Kelp Meal Fertilizer',
-    'Nitrogen Fertilizer',
-    'Seaweed Extract for Plants',
-    'pH Down',
-    'pH Up'
-  ];
-
-  const treesAndShrubsList = [
-    'Peach Tree Fertilizer',
-    'Olive Tree Fertilizer',
-    'Mango Tree Fertilizer',
-    'Lime Tree Fertilizer',
-    'Evergreen Fertilizer',
-    'Arborvitae Fertilizer',
-    'Palm Fertilizer',
-    'Apple Tree Fertilizer',
-    'Citrus Fertilizer',
-    'Tree Fertilizer',
-    'Fruit Tree Fertilizer',
-    'Lemon Tree Fertilizer',
-    'Avocado Tree Fertilizer',
-    '10-10-10 for Trees',
-    'Aspen Tree Fertilizer',
-    'Boxwood Fertilizer',
-    'Crepe Myrtle Fertilizer',
-    'Dogwood Tree Fertilizer',
-    'Japanese Maple Fertilizer',
-    'Magnolia Tree Fertilizer',
-    'Maple Tree Fertilizer',
-    'Oak Tree Fertilizer',
-    'Orange Tree Fertilizer',
-    'Pine Tree Fertilizer',
-    'Root Stimulator for Trees',
-    'Sago Palm Fertilizer',
-    'Shrub Fertilizer',
-    'Tree And Shrub Fertilizer',
-    'Jasmine Fertilizer'
-  ];
-
-  const markBestSellers = (products: Product[]) => {
-    // Use a seeded random number generator for consistency
-    const seededRandom = (seed: number) => {
-      return function() {
-        seed = Math.sin(seed) * 10000;
-        return seed - Math.floor(seed);
-      };
-    };
-
-    // Use product ID as seed for consistency
-    return products.map(product => {
-      const random = seededRandom(parseInt(product.id.replace(/\D/g, ''), 10))();
-      // Mark ~20% of products as best sellers
-      return {
-        ...product,
-        isBestSeller: random < 0.2,
-        // Add a popularity score for sorting
-        popularityScore: random
-      };
+    const tabProducts = products.filter(product => {
+      // Filter logic based on tab
+      const title = product.title.toLowerCase();
+      switch (activeTab) {
+        case 'houseplants':
+          return title.includes('house') || title.includes('indoor');
+        case 'succulents':
+          return title.includes('succulent') || title.includes('cactus');
+        case 'tropical':
+          return title.includes('tropical') || title.includes('monstera') || title.includes('palm');
+        case 'vines':
+          return title.includes('vine') || title.includes('trailing') || title.includes('pothos');
+        default:
+          return true;
+      }
     });
-  };
+    
+    return tabProducts;
+  }, [products, activeTab]);
 
-  useEffect(() => {
-    const fetchAllProducts = async () => {
-      setLoading(true);
-      setError(null);
-      let hasNextPage = true;
-      let cursor = null;
-      let allProducts: Product[] = [];
-
-      while (hasNextPage) {
-        const query = `
-          query Products${cursor ? '($cursor: String!)' : ''} {
-            products(first: 100${cursor ? ', after: $cursor' : ''}) {
-              pageInfo {
-                hasNextPage
-                endCursor
-              }
-              edges {
-                node {
-                  id
-                  title
-                  handle
-                  featuredImage {
-                    url
-                    altText
+  // Function to fetch products with pagination
+  const fetchProducts = useCallback(async (after?: string) => {
+    try {
+      if (after) {
+        setLoadingMore(true);
+      }
+      
+      const query = `
+        query Products${after ? '($cursor: String!)' : ''} {
+          products(first: 16${after ? ', after: $cursor' : ''}) {
+            pageInfo {
+              hasNextPage
+              endCursor
+            }
+            edges {
+              node {
+                id
+                title
+                handle
+                description
+                featuredImage {
+                  url
+                  altText
+                }
+                images(first: 3) {
+                  edges {
+                    node {
+                      url
+                      altText
+                    }
                   }
-                  variants(first: 10) {
-                    edges {
-                      node {
-                        id
-                        title
-                        price {
-                          amount
-                          currencyCode
-                        }
-                        compareAtPrice {
-                          amount
-                          currencyCode
-                        }
-                        selectedOptions {
-                          name
-                          value
-                        }
-                        quantityAvailable
+                }
+                variants(first: 1) {
+                  edges {
+                    node {
+                      id
+                      title
+                      price {
+                        amount
+                        currencyCode
                       }
+                      compareAtPrice {
+                        amount
+                        currencyCode
+                      }
+                      selectedOptions {
+                        name
+                        value
+                      }
+                      quantityAvailable
                     }
                   }
                 }
               }
             }
           }
-        `;
-
-        try {
-          const response = await shopifyFetch({ 
-            query,
-            variables: cursor ? { cursor } : undefined
-          });
-
-          if (response.status === 200 && response.body?.data?.products?.edges) {
-            const { products: { edges, pageInfo } } = response.body.data;
-            
-            const newProducts = edges.map(({ node }: any) => ({
-              ...node,
-              reviews: Math.floor(Math.random() * 1000) + 100,
-            }));
-
-            allProducts = [...allProducts, ...newProducts];
-            
-            hasNextPage = pageInfo.hasNextPage;
-            cursor = pageInfo.endCursor;
-          } else {
-            setError('Failed to fetch products');
-            console.error('Invalid response format:', response);
-            break;
-          }
-        } catch (error) {
-          setError('Error fetching products');
-          console.error('Error fetching products:', error);
-          break;
         }
+      `;
+
+      const response = await shopifyFetch({ 
+        query,
+        variables: after ? { cursor: after } : undefined
+      });
+
+      if (response.status === 200 && response.body?.data?.products?.edges) {
+        const { products: { edges, pageInfo } } = response.body.data;
+        
+        const newProducts = edges.map(({ node }: any) => ({
+          ...node,
+          reviews: Math.floor(Math.random() * 1000) + 100,
+        }));
+
+        // Mark best sellers
+        const productsWithBestSellers = newProducts.map((product: any) => ({
+          ...product,
+          isBestSeller: Math.random() < 0.2
+        }));
+
+        setProducts(prev => after ? [...prev, ...productsWithBestSellers] : productsWithBestSellers);
+        setHasMore(pageInfo.hasNextPage);
+        setCursor(pageInfo.endCursor);
+      } else {
+        setError('Failed to fetch products');
+        console.error('Invalid response format:', response);
       }
-
-      // Mark best sellers after fetching all products
-      const productsWithBestSellers = markBestSellers(allProducts);
-      setProducts(productsWithBestSellers);
+    } catch (error) {
+      setError('Error fetching products');
+      console.error('Error fetching products:', error);
+    } finally {
       setLoading(false);
-    };
-
-    fetchAllProducts();
+      setLoadingMore(false);
+    }
   }, []);
 
-  // Filter products based on category and search query
+  // Initial fetch
   useEffect(() => {
-    // First filter by category
-    let categoryFiltered: Product[] = [];
+    fetchProducts();
+  }, [fetchProducts]);
+
+  // Setup intersection observer for infinite scrolling
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      entries => {
+        const [entry] = entries;
+        if (entry.isIntersecting && hasMore && !loadingMore && !loading) {
+          fetchProducts(cursor || undefined);
+        }
+      },
+      { threshold: 0.1 }
+    );
     
-    if (activeCategory === 'HOUSEPLANTS') {
-      // Filter for houseplants using the exact product names
-      categoryFiltered = products.filter(product => 
-        houseplantsList.some(houseplant => {
-          const productTitle = product.title.trim();
-          return productTitle === houseplant || productTitle.includes(houseplant);
-        })
-      );
-    } else if (activeCategory === 'GARDEN PLANTS') {
-      // Filter for garden plants using exact product names
-      categoryFiltered = products.filter(product => 
-        gardenPlantsList.some(gardenPlant => {
-          const productTitle = product.title.trim();
-          return productTitle === gardenPlant || productTitle.includes(gardenPlant);
-        })
-      );
-    } else if (activeCategory === 'HYDRO & AQUATIC') {
-      // Filter for hydroponic and aquatic plants using exact product names
-      categoryFiltered = products.filter(product => 
-        hydroAquaticList.some(hydroPlant => {
-          const productTitle = product.title.trim();
-          return productTitle === hydroPlant || productTitle.includes(hydroPlant);
-        })
-      );
-    } else if (activeCategory === 'SUPPLEMENTS') {
-      // Filter for supplements and additives using exact product names
-      categoryFiltered = products.filter(product => 
-        supplementsList.some(supplement => {
-          const productTitle = product.title.trim();
-          return productTitle === supplement || productTitle.includes(supplement);
-        })
-      );
-    } else if (activeCategory === 'ALL') {
-      categoryFiltered = products;
+    const currentRef = loadMoreRef.current;
+    if (currentRef) {
+      observer.observe(currentRef);
     }
     
-    // Then filter by search query if one exists
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim();
-      const searchFiltered = categoryFiltered.filter(product => 
-        product.title.toLowerCase().includes(query)
-      );
-      setFilteredProducts(searchFiltered);
-    } else {
-      setFilteredProducts(categoryFiltered);
-    }
-    
-  }, [activeCategory, products, searchQuery]);
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef);
+      }
+    };
+  }, [cursor, hasMore, loadingMore, loading, fetchProducts]);
 
   const backgroundColors = [
     "bg-[#F2F7F2]", // Light mint green
@@ -567,71 +363,44 @@ const ShopByPlant = () => {
     "bg-[#F7F7F2]"  // Light yellow
   ];
 
-  // Handle search input change
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
-  };
-
   return (
-    <section className="w-full bg-[#FDF6EF] px-4 sm:px-6 py-12 sm:py-16">
-      <div className="max-w-[1400px] mx-auto">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
-          <div>
-            <h2 className="text-[#FF6B6B] text-4xl sm:text-5xl font-bold mb-2">Shop by Plant</h2>
-            <p className="text-xl sm:text-2xl font-medium text-gray-700">What are you growing?</p>
-          </div>
-          
-          <div className="mt-4 md:mt-0">
-            <div className="relative">
-              <input 
-                type="text"
-                placeholder="SEARCH"
-                value={searchQuery}
-                onChange={handleSearchChange}
-                className="bg-white border border-gray-200 rounded-full px-4 py-2 pl-10 pr-4 w-full max-w-[250px] outline-none focus:border-[#FF6B6B] text-sm"
-                aria-label="Search products"
-              />
-              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-              </svg>
-            </div>
-          </div>
-        </div>
+    <section className="py-16 bg-[#FDF6EF]">
+      <div className="container mx-auto px-4">
+        <h2 className="text-4xl font-bold text-center mb-12">Shop By Plant</h2>
         
-        {/* Category buttons */}
-        <div className="flex flex-wrap items-center gap-3 mb-10">
+        <div className="mb-8 flex flex-wrap justify-center gap-3">
           <Link 
             href="/category/houseplants"
-            className={`${activeCategory === 'HOUSEPLANTS' ? 'bg-[#8B7355] text-white' : 'bg-[#E8E0D4] text-[#8B7355]'} px-6 py-2.5 rounded-full font-medium transition-colors hover:bg-[#8B7355] hover:text-white`}
-            onClick={() => setActiveCategory('HOUSEPLANTS')}
+            className={`${activeTab === 'houseplants' ? 'bg-[#8B7355] text-white' : 'bg-[#E8E0D4] text-[#8B7355]'} px-6 py-2.5 rounded-full font-medium transition-colors hover:bg-[#8B7355] hover:text-white`}
+            onClick={() => setActiveTab('houseplants')}
           >
             HOUSEPLANTS
           </Link>
           <Link 
             href="/category/garden-plants"
-            className={`${activeCategory === 'GARDEN PLANTS' ? 'bg-[#8B7355] text-white' : 'bg-[#E8E0D4] text-[#8B7355]'} px-6 py-2.5 rounded-full font-medium transition-colors hover:bg-[#8B7355] hover:text-white`}
-            onClick={() => setActiveCategory('GARDEN PLANTS')}
+            className={`${activeTab === 'garden-plants' ? 'bg-[#8B7355] text-white' : 'bg-[#E8E0D4] text-[#8B7355]'} px-6 py-2.5 rounded-full font-medium transition-colors hover:bg-[#8B7355] hover:text-white`}
+            onClick={() => setActiveTab('garden-plants')}
           >
             GARDEN PLANTS
           </Link>
           <Link 
             href="/category/hydro-aquatic"
-            className={`${activeCategory === 'HYDRO & AQUATIC' ? 'bg-[#8B7355] text-white' : 'bg-[#E8E0D4] text-[#8B7355]'} px-6 py-2.5 rounded-full font-medium transition-colors hover:bg-[#8B7355] hover:text-white`}
-            onClick={() => setActiveCategory('HYDRO & AQUATIC')}
+            className={`${activeTab === 'hydro-aquatic' ? 'bg-[#8B7355] text-white' : 'bg-[#E8E0D4] text-[#8B7355]'} px-6 py-2.5 rounded-full font-medium transition-colors hover:bg-[#8B7355] hover:text-white`}
+            onClick={() => setActiveTab('hydro-aquatic')}
           >
             HYDRO & AQUATIC
           </Link>
           <Link 
             href="/category/supplements"
-            className={`${activeCategory === 'SUPPLEMENTS' ? 'bg-[#8B7355] text-white' : 'bg-[#E8E0D4] text-[#8B7355]'} px-6 py-2.5 rounded-full font-medium transition-colors hover:bg-[#8B7355] hover:text-white`}
-            onClick={() => setActiveCategory('SUPPLEMENTS')}
+            className={`${activeTab === 'supplements' ? 'bg-[#8B7355] text-white' : 'bg-[#E8E0D4] text-[#8B7355]'} px-6 py-2.5 rounded-full font-medium transition-colors hover:bg-[#8B7355] hover:text-white`}
+            onClick={() => setActiveTab('supplements')}
           >
             SUPPLEMENTS
           </Link>
           <Link 
             href="/category/all"
             className="bg-[#FF6B6B] text-white px-6 py-2.5 rounded-full font-medium hover:bg-[#ff5252] transition-colors"
-            onClick={() => setActiveCategory('ALL')}
+            onClick={() => setActiveTab('all')}
           >
             SHOP ALL
           </Link>
@@ -740,6 +509,12 @@ const ShopByPlant = () => {
           border-radius: 10px;
         }
       `}</style>
+
+      <div ref={loadMoreRef} className="w-full h-10 flex items-center justify-center mt-8">
+        {loadingMore && (
+          <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-[#FF6B6B]"></div>
+        )}
+      </div>
     </section>
   );
 };

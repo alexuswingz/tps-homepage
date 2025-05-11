@@ -49,11 +49,13 @@ interface ProductClientProps {
 }
 
 const ProductClient = ({ product }: ProductClientProps) => {
-  const [selectedVariant, setSelectedVariant] = useState(product.variants[0]?.id || '');
+  const [selectedVariant, setSelectedVariant] = useState(product.variants[0]?.id);
   const [quantity, setQuantity] = useState(1);
-  const [selectedImage, setSelectedImage] = useState(0);
+  const [purchaseType, setPurchaseType] = useState<'oneTime' | 'recurring'>('oneTime');
   const { addToCart } = useCart();
   const { openCart } = useCartUI();
+  const [selectedImage, setSelectedImage] = useState(0);
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
 
   const handleAddToCart = () => {
     if (!product) return;
@@ -98,7 +100,7 @@ const ProductClient = ({ product }: ProductClientProps) => {
       <section className="w-full bg-[#FDF6EF]">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-8 sm:py-12">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-            {/* Left Column - Product Image */}
+            {/* Left Column - Product Images */}
             <div className="relative">
               {product.isBestSeller && (
                 <div className="absolute top-4 left-4 z-10 bg-[#FF6B6B] text-white px-3 py-1 rounded-full text-sm font-medium">
@@ -110,9 +112,18 @@ const ProductClient = ({ product }: ProductClientProps) => {
                   src={product.images[selectedImage].url}
                   alt={product.images[selectedImage].altText || product.title}
                   fill
-                  className="object-contain p-8"
-                  priority
+                  className={`object-contain p-8 transition-opacity duration-300 ${isImageLoaded ? 'opacity-100' : 'opacity-0'}`}
+                  priority={true}
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  onLoadingComplete={() => setIsImageLoaded(true)}
+                  placeholder="blur"
+                  blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+P+/HgAEtAJJXIDTjwAAAABJRU5ErkJggg=="
                 />
+                {!isImageLoaded && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#FF6B6B]"></div>
+                  </div>
+                )}
               </div>
               {product.images.length > 1 && (
                 <div className="mt-4 grid grid-cols-5 gap-2">
@@ -130,6 +141,8 @@ const ProductClient = ({ product }: ProductClientProps) => {
                           alt={image.altText || `${product.title} - View ${index + 1}`}
                           fill
                           className="object-contain"
+                          loading="lazy"
+                          sizes="(max-width: 768px) 60px, 100px"
                         />
                       </div>
                     </button>

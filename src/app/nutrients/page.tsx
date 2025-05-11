@@ -4,8 +4,9 @@ import { useState, useCallback } from 'react';
 import Image from 'next/image';
 import { useDropzone } from 'react-dropzone';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiUploadCloud, FiSearch, FiX } from 'react-icons/fi';
+import { FiUploadCloud, FiX } from 'react-icons/fi';
 import { RiPlantLine, RiLeafLine } from 'react-icons/ri';
+import Link from 'next/link';
 
 interface PlantIdentification {
   name: string;
@@ -36,7 +37,6 @@ interface RecommendedProduct {
 }
 
 const NutrientsPage = () => {
-  const [plantName, setPlantName] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [identifiedPlant, setIdentifiedPlant] = useState<PlantIdentification | null>(null);
   const [recommendedProducts, setRecommendedProducts] = useState<RecommendedProduct[]>([]);
@@ -72,7 +72,7 @@ const NutrientsPage = () => {
 
   const searchPlant = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!plantName.trim() && !selectedImage) return;
+    if (!selectedImage) return;
 
     setIsSearching(true);
     setError(null);
@@ -80,28 +80,48 @@ const NutrientsPage = () => {
     setRecommendedProducts([]);
 
     try {
+      console.log('Preparing to submit plant image for identification');
+      
+      // Create FormData object
       const formData = new FormData();
-      if (plantName.trim()) {
-        formData.append('plantName', plantName.trim());
-      }
+      
+      // Add the image file
       if (selectedImage) {
         formData.append('image', selectedImage);
+        console.log('Image added to form data:', selectedImage.name, selectedImage.type, selectedImage.size);
       }
 
+      // Send request to identify plant API
+      console.log('Sending request to identify plant API');
       const response = await fetch('/api/identify-plant', {
         method: 'POST',
         body: formData,
       });
 
+      console.log('Response received:', response.status);
+      
       const data = await response.json();
-
-      if (!response.ok) {
+      
+      if (!data.success) {
+        // API returned an error
+        console.error('API error:', data.error);
         throw new Error(data.error || 'Failed to identify plant');
       }
       
+      console.log('Parsed API response');
+      
       if (data.result) {
+        console.log('Plant identified:', data.result.name);
+        
+        // Show fallback notice if applicable
+        if (data.fallback) {
+          setError('Note: Using demo data. The plant identification service is currently unavailable.');
+        }
+        
         setIdentifiedPlant(data.result);
+        
         // Fetch product recommendations based on identified plant
+        console.log('Fetching product recommendations');
         const recommendationsResponse = await fetch('/api/get-recommendations', {
           method: 'POST',
           headers: {
@@ -114,7 +134,11 @@ const NutrientsPage = () => {
 
         if (recommendationsResponse.ok) {
           const recommendationsData = await recommendationsResponse.json();
+          console.log('Recommendations received:', recommendationsData.products?.length || 0);
           setRecommendedProducts(recommendationsData.products);
+        } else {
+          console.error('Failed to get recommendations:', recommendationsResponse.status);
+          // Continue even if recommendations fail
         }
       } else {
         throw new Error('No plant identification results returned');
@@ -122,7 +146,7 @@ const NutrientsPage = () => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to identify plant. Please try again.';
       setError(errorMessage);
-      console.error('Error:', err);
+      console.error('Error in plant identification process:', err);
     } finally {
       setIsSearching(false);
     }
@@ -142,31 +166,13 @@ const NutrientsPage = () => {
             Find Your Plant's Perfect Nutrients
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Upload a photo or enter your plant's name, and we'll analyze its needs to recommend the best nutrients for optimal growth
+            Upload a photo of your plant, and we'll analyze its needs to recommend the best nutrients for optimal growth
           </p>
         </motion.div>
 
         {/* Search Form */}
         <div className="bg-white rounded-3xl shadow-lg p-6 sm:p-8 mb-12 max-w-4xl mx-auto">
           <form onSubmit={searchPlant} className="space-y-8">
-            {/* Text Input */}
-            <div className="relative">
-              <input
-                type="text"
-                value={plantName}
-                onChange={(e) => setPlantName(e.target.value)}
-                placeholder="Enter plant name (e.g., Monstera deliciosa)"
-                className="w-full px-6 py-4 rounded-2xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-[#4CAF50] focus:ring-2 focus:ring-[#4CAF50]/20 text-gray-800 text-lg transition-all duration-200"
-              />
-              <FiSearch className="absolute right-6 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl" />
-            </div>
-
-            <div className="flex items-center justify-center">
-              <div className="w-full max-w-xs h-px bg-gray-200" />
-              <span className="px-4 text-gray-500 font-medium">OR</span>
-              <div className="w-full max-w-xs h-px bg-gray-200" />
-            </div>
-
             {/* Image Upload Zone */}
             <div className="relative">
               <div
@@ -215,9 +221,9 @@ const NutrientsPage = () => {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={isSearching || (!plantName.trim() && !selectedImage)}
+              disabled={isSearching || !selectedImage}
               className={`w-full py-4 px-6 rounded-2xl text-white font-medium text-lg transition-all duration-200 ${
-                isSearching || (!plantName.trim() && !selectedImage)
+                isSearching || !selectedImage
                   ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-[#4CAF50] hover:bg-[#43A047] transform hover:-translate-y-1'
               }`}
@@ -228,7 +234,7 @@ const NutrientsPage = () => {
                   <span>Analyzing...</span>
                 </div>
               ) : (
-                'Find Nutrients'
+                'Identify Plant'
               )}
             </button>
           </form>
@@ -241,9 +247,24 @@ const NutrientsPage = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="bg-red-50 border border-red-200 rounded-2xl p-6 mb-8 text-center text-red-600"
+              className="bg-red-50 border border-red-200 rounded-2xl p-6 mb-8 text-center"
             >
-              {error}
+              <div className="text-red-600 font-medium text-lg mb-2">{error}</div>
+              <p className="text-gray-700">
+                Please ensure your image clearly shows the plant, with good lighting and focus.
+                The plant identification service works best with close-up images of leaves or distinctive features.
+              </p>
+              <div className="mt-4 flex justify-center">
+                <button
+                  onClick={() => {
+                    clearImage();
+                    setError(null);
+                  }}
+                  className="px-4 py-2 bg-gray-800 text-white rounded-xl hover:bg-gray-700 transition-colors duration-200"
+                >
+                  Try Another Image
+                </button>
+              </div>
             </motion.div>
           )}
 
@@ -316,7 +337,7 @@ const NutrientsPage = () => {
               </div>
 
               {/* Recommended Products */}
-              {recommendedProducts.length > 0 && (
+              {recommendedProducts.length > 0 ? (
                 <div className="space-y-6">
                   <h3 className="text-2xl font-bold text-gray-900">
                     Recommended Products
@@ -329,36 +350,55 @@ const NutrientsPage = () => {
                         animate={{ opacity: 1, scale: 1 }}
                         className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-200 transform hover:-translate-y-1"
                       >
-                        <div className="relative aspect-square">
-                          <Image
-                            src={product.image}
-                            alt={product.name}
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
-                        <div className="p-6">
-                          <h4 className="text-xl font-semibold text-gray-900 mb-2">
-                            {product.name}
-                          </h4>
-                          <p className="text-gray-600 mb-4 line-clamp-2">
-                            {product.description}
-                          </p>
-                          <div className="flex items-center justify-between">
-                            <span className="text-2xl font-bold text-[#4CAF50]">
-                              ${product.price.toFixed(2)}
-                            </span>
-                            <a
-                              href={product.link}
-                              className="px-4 py-2 bg-[#4CAF50] text-white rounded-xl hover:bg-[#43A047] transition-colors duration-200"
-                            >
-                              View Details
-                            </a>
+                        <Link href={product.link} className="block">
+                          <div className="relative aspect-square">
+                            {product.image ? (
+                              <Image
+                                src={product.image}
+                                alt={product.name}
+                                fill
+                                className="object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                                <RiPlantLine className="text-gray-400 text-5xl" />
+                              </div>
+                            )}
                           </div>
-                        </div>
+                          <div className="p-6">
+                            <h4 className="text-xl font-semibold text-gray-900 mb-2">
+                              {product.name}
+                            </h4>
+                            <p className="text-gray-600 mb-4 line-clamp-2">
+                              {product.description}
+                            </p>
+                            <div className="flex items-center justify-between">
+                              <span className="text-2xl font-bold text-[#4CAF50]">
+                                ${typeof product.price === 'number' ? product.price.toFixed(2) : product.price}
+                              </span>
+                              <span
+                                className="px-4 py-2 bg-[#4CAF50] text-white rounded-xl hover:bg-[#43A047] transition-colors duration-200"
+                              >
+                                View Details
+                              </span>
+                            </div>
+                          </div>
+                        </Link>
                       </motion.div>
                     ))}
                   </div>
+                </div>
+              ) : (
+                <div className="bg-gray-50 rounded-2xl p-8 text-center">
+                  <RiPlantLine className="text-4xl text-[#4CAF50] mx-auto mb-4" />
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">No Products Found</h3>
+                  <p className="text-gray-600 max-w-md mx-auto">
+                    We couldn't find specific products for this plant. Please check our 
+                    <Link href="/shop" className="text-[#4CAF50] font-medium mx-1 hover:underline">
+                      shop
+                    </Link>
+                    for our full range of plant care products.
+                  </p>
                 </div>
               )}
             </motion.div>

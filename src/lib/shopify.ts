@@ -128,4 +128,119 @@ export const searchProducts = async (searchQuery: string) => {
       }]
     }
   }));
+};
+
+/**
+ * Prefetches common product data that might be needed across the application
+ * to improve loading performance.
+ */
+export const prefetchCommonProductData = async () => {
+  // Simple prefetch query to get basic product information
+  const query = `
+    query FeaturedProducts {
+      products(first: 12, sortKey: BEST_SELLING) {
+        edges {
+          node {
+            id
+            title
+            handle
+            featuredImage {
+              url
+              altText
+            }
+            variants(first: 1) {
+              edges {
+                node {
+                  id
+                  price {
+                    amount
+                    currencyCode
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  try {
+    return await shopifyFetch({ query });
+  } catch (error) {
+    console.error("Error prefetching products:", error);
+    return null;
+  }
+};
+
+// Cache for product data to avoid duplicate requests
+let productCache: Record<string, any> = {};
+
+/**
+ * Gets product data with caching to avoid redundant fetches
+ */
+export const getProductWithCache = async (handle: string) => {
+  // Return from cache if available
+  if (productCache[handle]) {
+    return productCache[handle];
+  }
+
+  const query = `
+    query ProductByHandle($handle: String!) {
+      product(handle: $handle) {
+        id
+        title
+        handle
+        description
+        featuredImage {
+          url
+          altText
+        }
+        images(first: 5) {
+          edges {
+            node {
+              url
+              altText
+            }
+          }
+        }
+        variants(first: 10) {
+          edges {
+            node {
+              id
+              title
+              price {
+                amount
+                currencyCode
+              }
+              quantityAvailable
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  try {
+    const response = await shopifyFetch({
+      query,
+      variables: { handle }
+    });
+
+    if (response.status === 200 && response.body?.data?.product) {
+      // Store in cache
+      productCache[handle] = response.body.data.product;
+      return response.body.data.product;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error(`Error fetching product ${handle}:`, error);
+    return null;
+  }
+};
+
+// Clear cache when it gets too large (optional)
+export const clearProductCache = () => {
+  productCache = {};
 }; 

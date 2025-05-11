@@ -16,6 +16,7 @@ const Navbar = ({ onCartClick }: NavbarProps) => {
   const [isShopOpen, setIsShopOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [mobileSearchQuery, setMobileSearchQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -23,22 +24,69 @@ const Navbar = ({ onCartClick }: NavbarProps) => {
   const closeTimeout = useRef<ReturnType<typeof setTimeout>>(null);
   const searchTimeout = useRef<ReturnType<typeof setTimeout>>(null);
   const router = useRouter();
+  
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+    
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, [isMobileMenuOpen]);
 
-  // Get category image based on title
-  const getCategoryImage = (category: string) => {
+  // Get category icon based on title
+  const getCategoryIcon = (category: string) => {
     switch (category.toLowerCase()) {
       case 'houseplants':
-        return '/assets/categories/houseplants.jpg';
+        return (
+          <svg className="w-10 h-10 p-2 bg-green-100 rounded-lg text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 11.5a.5.5 0 111 0 .5.5 0 01-1 0zm7.5 0a7.5 7.5 0 11-15 0 7.5 7.5 0 0115 0zM12 2a3 3 0 013 3c0 1.6-1.4 2.5-3 2.5S9 6.6 9 5c0-1.65 1.35-3 3-3z" />
+          </svg>
+        );
       case 'garden plants':
-        return '/assets/categories/garden.jpg';
+        return (
+          <svg className="w-10 h-10 p-2 bg-amber-100 rounded-lg text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-2.2 0-4 1.8-4 4 0 4 4 8 4 8s4-4 4-8c0-2.2-1.8-4-4-4zm-3.75-2.5c0 1.38 1.12 2.5 2.5 2.5.53 0 1.01-.16 1.42-.44M15.75 5.5c0 1.38-1.12 2.5-2.5 2.5-.53 0-1.01-.16-1.42-.44" />
+          </svg>
+        );
       case 'hydro & aquatic':
-        return '/assets/categories/hydro.jpg';
+        return (
+          <svg className="w-10 h-10 p-2 bg-blue-100 rounded-lg text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 13h8m-2-2l2 2-2 2M3 13h8M5 15l-2-2 2-2M12 3v18" />
+          </svg>
+        );
       case 'supplements':
-        return '/assets/categories/supplements.jpg';
+        return (
+          <svg className="w-10 h-10 p-2 bg-purple-100 rounded-lg text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m-6-8h6M5 8h2v12H5V8zm12 0h2v12h-2V8zm-8-3h6v14H9V5z" />
+          </svg>
+        );
       default:
-        return '/assets/categories/default.jpg';
+        return (
+          <svg className="w-10 h-10 p-2 bg-gray-100 rounded-lg text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+          </svg>
+        );
     }
   };
+
+  // Bundle icon
+  const getBundleIcon = () => (
+    <svg className="w-10 h-10 p-2 bg-red-100 rounded-lg text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+    </svg>
+  );
+
+  // Nutrients icon
+  const getNutrientsIcon = () => (
+    <svg className="w-10 h-10 p-2 bg-teal-100 rounded-lg text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 008.828 10.172V5L8 4z" />
+    </svg>
+  );
 
   const handleMouseEnter = () => {
     if (closeTimeout.current) {
@@ -64,6 +112,15 @@ const Navbar = ({ onCartClick }: NavbarProps) => {
       router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
       setSearchQuery('');
       setShowSuggestions(false);
+    }
+  };
+
+  const handleMobileSearch = (e: FormEvent) => {
+    e.preventDefault();
+    if (mobileSearchQuery.trim()) {
+      router.push(`/search?q=${encodeURIComponent(mobileSearchQuery.trim())}`);
+      setMobileSearchQuery('');
+      setIsMobileMenuOpen(false);
     }
   };
 
@@ -106,6 +163,7 @@ const Navbar = ({ onCartClick }: NavbarProps) => {
         <button 
           className={`lg:hidden text-gray-800 z-50 ${isMobileMenuOpen ? 'fixed top-4 left-6' : ''}`}
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
         >
           {isMobileMenuOpen ? (
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -147,27 +205,19 @@ const Navbar = ({ onCartClick }: NavbarProps) => {
                     <div>
                       <div className="space-y-6">
                         <Link href="/shop?category=houseplants" className="flex items-center space-x-3 text-gray-600 hover:text-gray-900" onClick={handleLinkClick}>
-                          <div className="relative w-10 h-10 rounded-lg flex-shrink-0 overflow-hidden">
-                            <Image src={getCategoryImage('houseplants')} alt="Houseplants" fill className="object-cover" />
-                          </div>
+                          {getCategoryIcon('houseplants')}
                           <span className="font-medium">HOUSEPLANTS</span>
                         </Link>
                         <Link href="/shop?category=garden-plants" className="flex items-center space-x-3 text-gray-600 hover:text-gray-900" onClick={handleLinkClick}>
-                          <div className="relative w-10 h-10 rounded-lg flex-shrink-0 overflow-hidden">
-                            <Image src={getCategoryImage('garden plants')} alt="Garden Plants" fill className="object-cover" />
-                          </div>
+                          {getCategoryIcon('garden plants')}
                           <span className="font-medium">GARDEN PLANTS</span>
                         </Link>
                         <Link href="/shop?category=hydro-aquatic" className="flex items-center space-x-3 text-gray-600 hover:text-gray-900" onClick={handleLinkClick}>
-                          <div className="relative w-10 h-10 rounded-lg flex-shrink-0 overflow-hidden">
-                            <Image src={getCategoryImage('hydro & aquatic')} alt="Hydro & Aquatic" fill className="object-cover" />
-                          </div>
+                          {getCategoryIcon('hydro & aquatic')}
                           <span className="font-medium">HYDRO & AQUATIC</span>
                         </Link>
                         <Link href="/shop?category=plant-supplements" className="flex items-center space-x-3 text-gray-600 hover:text-gray-900" onClick={handleLinkClick}>
-                          <div className="relative w-10 h-10 rounded-lg flex-shrink-0 overflow-hidden">
-                            <Image src={getCategoryImage('supplements')} alt="Plant Supplements" fill className="object-cover" />
-                          </div>
+                          {getCategoryIcon('supplements')}
                           <span className="font-medium">PLANT SUPPLEMENTS</span>
                         </Link>
                         <Link 
@@ -198,34 +248,22 @@ const Navbar = ({ onCartClick }: NavbarProps) => {
                       </div>
                     </div>
 
-                    {/* Third grid - Featured Links with Images */}
+                    {/* Third grid - Featured Links with Icons */}
                     <div className="grid grid-cols-2 gap-6">
-                      <Link href="/build-bundle" className="block group" onClick={handleLinkClick}>
-                        <div className="relative aspect-square rounded-xl overflow-hidden">
-                          <Image
-                            src="/assets/categories/bundle.jpg"
-                            alt="Build a Bundle"
-                            fill
-                            className="object-cover transition-transform duration-300 group-hover:scale-105"
-                          />
-                          <div className="absolute inset-0 bg-black/20" />
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-center font-medium text-white text-lg">BUILD A BUNDLE</span>
+                      <Link href="/build-bundle" className="block" onClick={handleLinkClick}>
+                        <div className="bg-red-50 rounded-xl p-6 h-full flex flex-col items-center justify-center hover:bg-red-100 transition-colors">
+                          <div className="mb-3">
+                            {getBundleIcon()}
                           </div>
+                          <span className="text-center font-medium text-gray-800 text-lg">BUILD A BUNDLE</span>
                         </div>
                       </Link>
-                      <Link href="/nutrients" className="block group" onClick={handleLinkClick}>
-                        <div className="relative aspect-square rounded-xl overflow-hidden">
-                          <Image
-                            src="/assets/categories/nutrients.jpg"
-                            alt="Find Nutrients"
-                            fill
-                            className="object-cover transition-transform duration-300 group-hover:scale-105"
-                          />
-                          <div className="absolute inset-0 bg-black/20" />
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-center font-medium text-white text-lg">FIND NUTRIENTS</span>
+                      <Link href="/nutrients" className="block" onClick={handleLinkClick}>
+                        <div className="bg-teal-50 rounded-xl p-6 h-full flex flex-col items-center justify-center hover:bg-teal-100 transition-colors">
+                          <div className="mb-3">
+                            {getNutrientsIcon()}
                           </div>
+                          <span className="text-center font-medium text-gray-800 text-lg">FIND NUTRIENTS</span>
                         </div>
                       </Link>
                     </div>
@@ -298,6 +336,17 @@ const Navbar = ({ onCartClick }: NavbarProps) => {
             </div>
           </div>
 
+          {/* Mobile Search Button */}
+          <button 
+            className="lg:hidden text-gray-800 hover:text-gray-600"
+            onClick={() => setIsMobileMenuOpen(true)}
+            aria-label="Search"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </button>
+
           {/* Account Icon */}
           <Link href="/account" className="text-gray-800 hover:text-gray-600">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -309,6 +358,7 @@ const Navbar = ({ onCartClick }: NavbarProps) => {
           <button
             onClick={onCartClick}
             className="relative text-gray-800 hover:text-gray-600"
+            aria-label={`Shopping cart with ${cartCount} items`}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
@@ -323,42 +373,60 @@ const Navbar = ({ onCartClick }: NavbarProps) => {
 
         {/* Mobile menu */}
         {isMobileMenuOpen && (
-          <div className="fixed inset-0 bg-[#FDF6EF] z-40 lg:hidden">
-            <div className="p-6">
-              {/* Rest of mobile menu items */}
+          <div className="fixed inset-0 bg-[#FDF6EF] z-40 lg:hidden overflow-y-auto">
+            <div className="p-6 pt-16 pb-24">
+              {/* Mobile search */}
+              <div className="mb-6">
+                <form onSubmit={handleMobileSearch} className="flex items-center">
+                  <div className="relative w-full">
+                    <input
+                      type="text"
+                      placeholder="Search products..."
+                      value={mobileSearchQuery}
+                      onChange={(e) => setMobileSearchQuery(e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 rounded-full bg-white border border-gray-200 focus:outline-none focus:border-[#FF6B6B]"
+                    />
+                    <button
+                      type="submit"
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {/* Menu items */}
               <div className="space-y-6">
                 <Link href="/build-bundle" className="flex items-center space-x-4 py-4 border-b border-gray-200" onClick={handleLinkClick}>
-                  <div className="relative w-12 h-12 rounded-lg flex-shrink-0 overflow-hidden">
-                    <Image src="/assets/categories/bundle.jpg" alt="Build a Bundle" fill className="object-cover" />
-                  </div>
+                  {getBundleIcon()}
                   <span className="text-gray-800 font-medium">BUILD A BUNDLE & SAVE $10</span>
                 </Link>
 
+                <Link href="/nutrients" className="flex items-center space-x-4 py-4 border-b border-gray-200" onClick={handleLinkClick}>
+                  {getNutrientsIcon()}
+                  <span className="text-gray-800 font-medium">FIND YOUR NUTRIENTS</span>
+                </Link>
+
                 <Link href="/shop?category=houseplants" className="flex items-center space-x-4 py-4 border-b border-gray-200" onClick={handleLinkClick}>
-                  <div className="relative w-12 h-12 rounded-lg flex-shrink-0 overflow-hidden">
-                    <Image src={getCategoryImage('houseplants')} alt="Houseplants" fill className="object-cover" />
-                  </div>
+                  {getCategoryIcon('houseplants')}
                   <span className="text-gray-800 font-medium">HOUSEPLANTS</span>
                 </Link>
 
                 <Link href="/shop?category=garden-plants" className="flex items-center space-x-4 py-4 border-b border-gray-200" onClick={handleLinkClick}>
-                  <div className="relative w-12 h-12 rounded-lg flex-shrink-0 overflow-hidden">
-                    <Image src={getCategoryImage('garden plants')} alt="Garden Plants" fill className="object-cover" />
-                  </div>
+                  {getCategoryIcon('garden plants')}
                   <span className="text-gray-800 font-medium">GARDEN PLANTS</span>
                 </Link>
 
                 <Link href="/shop?category=hydro-aquatic" className="flex items-center space-x-4 py-4 border-b border-gray-200" onClick={handleLinkClick}>
-                  <div className="relative w-12 h-12 rounded-lg flex-shrink-0 overflow-hidden">
-                    <Image src={getCategoryImage('hydro & aquatic')} alt="Hydro & Aquatic" fill className="object-cover" />
-                  </div>
+                  {getCategoryIcon('hydro & aquatic')}
                   <span className="text-gray-800 font-medium">HYDRO & AQUATIC</span>
                 </Link>
 
                 <Link href="/shop?category=plant-supplements" className="flex items-center space-x-4 py-4 border-b border-gray-200" onClick={handleLinkClick}>
-                  <div className="relative w-12 h-12 rounded-lg flex-shrink-0 overflow-hidden">
-                    <Image src={getCategoryImage('supplements')} alt="Plant Supplements" fill className="object-cover" />
-                  </div>
+                  {getCategoryIcon('supplements')}
                   <span className="text-gray-800 font-medium">PLANT SUPPLEMENTS</span>
                 </Link>
 
