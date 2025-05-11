@@ -13,6 +13,9 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   output: 'export',
+  tracing: {
+    ignoreRootSpans: true,
+  }
 }
 
 module.exports = nextConfig 
