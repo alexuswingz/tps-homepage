@@ -1,5 +1,5 @@
 export const SHOPIFY_STOREFRONT_ACCESS_TOKEN = 'd5720278d38b25e4bc1118b31ff0f045';
-export const SHOPIFY_STORE_DOMAIN = 'https://n3mpgz-ny.myshopify.com';
+export const SHOPIFY_STORE_DOMAIN = 'https://checkout.tpsplantfoods.com';
 
 export async function shopifyFetch({ query, variables }: { query: string; variables?: any }) {
   const endpoint = `${SHOPIFY_STORE_DOMAIN}/api/2024-01/graphql.json`;
@@ -243,4 +243,36 @@ export const getProductWithCache = async (handle: string) => {
 // Clear cache when it gets too large (optional)
 export const clearProductCache = () => {
   productCache = {};
+};
+
+// Creates a Shopify checkout URL from cart items
+export const createCheckoutUrl = async (cart: any[], discountCode?: string) => {
+  if (!cart || cart.length === 0) return null;
+  
+  try {
+    // Format: /cart/{variant_id}:{quantity},{variant_id}:{quantity}
+    const cartItemsString = cart.map(item => {
+      // Extract variant ID properly, handling both full URLs and simple IDs
+      const variantId = item.variantId.includes('gid://shopify/ProductVariant/') 
+        ? item.variantId.replace('gid://shopify/ProductVariant/', '') 
+        : item.variantId;
+      
+      return `${variantId}:${item.quantity}`;
+    }).join(',');
+
+    // Create checkout URL with cart parameters
+    // Note: This will display the Shopify password page if the store is password protected
+    // The user must enter the password first to proceed to checkout
+    let url = `${SHOPIFY_STORE_DOMAIN}/cart/${cartItemsString}`;
+    
+    // Add discount code if provided
+    if (discountCode) {
+      url += `?discount=${encodeURIComponent(discountCode)}`;
+    }
+    
+    return url;
+  } catch (error) {
+    console.error('Error creating checkout URL:', error);
+    return null;
+  }
 }; 

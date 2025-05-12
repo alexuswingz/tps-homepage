@@ -7,6 +7,7 @@ import { useCart } from '@/context/CartContext';
 import { useRouter } from 'next/navigation';
 import SearchSuggestions from './SearchSuggestions';
 import type { Product } from '@/types/shopify';
+import { searchProducts } from '@/lib/shopify';
 
 interface NavbarProps {
   onCartClick: () => void;
@@ -138,10 +139,9 @@ const Navbar = ({ onCartClick }: NavbarProps) => {
     if (value.length >= 2) {
       setIsSearching(true);
       try {
-        const response = await fetch(`/api/search/suggestions?q=${encodeURIComponent(value)}`);
-        if (!response.ok) throw new Error('Search failed');
-        const data = await response.json();
-        setSearchResults(data.products);
+        // Use client-side search instead of API route
+        const products = await searchProducts(value);
+        setSearchResults(products);
         setShowSuggestions(true);
       } catch (error) {
         console.error('Search error:', error);

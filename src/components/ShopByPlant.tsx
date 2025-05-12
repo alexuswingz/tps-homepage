@@ -14,8 +14,9 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
+import 'swiper/css/virtual';
 // Import required modules
-import { Navigation, Pagination, A11y } from 'swiper/modules';
+import { Navigation, Pagination, A11y, Virtual } from 'swiper/modules';
 
 interface MoneyV2 {
   amount: string;
@@ -59,10 +60,12 @@ interface ProductCardProps {
 
 const ProductCard = ({ product, backgroundColor }: ProductCardProps) => {
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
+  const [imageError, setImageError] = useState(false);
   const { addToCart } = useCart();
   const { openCart } = useCartUI();
 
   useEffect(() => {
+    // Safe check for product variants
     if (product?.variants?.edges?.[0]?.node) {
       setSelectedVariant(product.variants.edges[0].node);
     }
@@ -71,50 +74,75 @@ const ProductCard = ({ product, backgroundColor }: ProductCardProps) => {
   if (!product || !selectedVariant) return null;
 
   const formatPrice = (price: MoneyV2) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: price.currencyCode || 'USD',
-    }).format(parseFloat(price.amount));
+    try {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: price.currencyCode || 'USD',
+      }).format(parseFloat(price.amount));
+    } catch (e) {
+      return '$0.00';
+    }
   };
 
   const handleAddToCart = () => {
     if (selectedVariant) {
-      const item = {
-        variantId: selectedVariant.id,
-        productId: product.id,
-        title: product.title,
-        variantTitle: selectedVariant.selectedOptions?.map(opt => opt.value).join(' - ') || '',
-        price: selectedVariant.price,
-        image: product.featuredImage,
-      };
-      
-      addToCart(item);
-      openCart();
+      try {
+        const item = {
+          variantId: selectedVariant.id,
+          productId: product.id,
+          title: product.title,
+          variantTitle: selectedVariant.selectedOptions?.map(opt => opt.value).join(' - ') || '',
+          price: selectedVariant.price,
+          image: product.featuredImage,
+        };
+        
+        addToCart(item);
+        openCart();
+      } catch (error) {
+        console.error('Error adding item to cart:', error);
+        toast.error('Failed to add item to cart');
+      }
     }
   };
 
   const formatProductTitle = (title: string) => {
-    // Look for 'Fertilizer', 'Food', or 'Plant Food' (case-insensitive)
-    const regex = /(.*?)(\s+(Fertilizer|Food|Plant Food))$/i;
-    const match = title.match(regex);
-    if (match) {
+    try {
+      // Look for 'Fertilizer', 'Food', or 'Plant Food' (case-insensitive)
+      const regex = /(.*?)(\s+(Fertilizer|Food|Plant Food))$/i;
+      const match = title.match(regex);
+      if (match) {
+        return (
+          <>
+            <span className="font-black">{match[1].trim()}</span>
+            {" | "}
+            <span className="font-medium text-base text-gray-700">{match[3]}</span>
+          </>
+        );
+      }
+      // If no match, just bold the first word and de-emphasize the rest
+      const [first, ...rest] = title.split(' ');
       return (
         <>
-          <span className="font-black">{match[1].trim()}</span>
-          {" | "}
-          <span className="font-medium text-base text-gray-700">{match[3]}</span>
+          <span className="font-black">{first}</span>
+          {rest.length ? <span className="font-medium text-base text-gray-700">{' ' + rest.join(' ')}</span> : ''}
         </>
       );
+    } catch (e) {
+      return <span className="font-black">{title}</span>;
     }
-    // If no match, just bold the first word and de-emphasize the rest
-    const [first, ...rest] = title.split(' ');
-    return (
-      <>
-        <span className="font-black">{first}</span>
-        {rest.length ? <span className="font-medium text-base text-gray-700">{' ' + rest.join(' ')}</span> : ''}
-      </>
-    );
   };
+
+  const formatVariantTitle = (variant: Variant) => {
+    if (!variant.selectedOptions || variant.selectedOptions.length === 0) {
+      return variant.title || 'Default';
+    }
+    
+    return variant.selectedOptions.map(opt => opt.value).join(' - ');
+  };
+
+  const imageSrc = imageError || !product.featuredImage?.url
+    ? '/placeholder.png'
+    : product.featuredImage.url;
 
   return (
     <div className={`rounded-3xl p-5 ${backgroundColor} transition-transform hover:scale-[1.02] flex flex-col h-full relative shadow-sm`}>
@@ -125,12 +153,13 @@ const ProductCard = ({ product, backgroundColor }: ProductCardProps) => {
       )}
       <Link href={`/product/${product.handle}`} className="relative h-[280px] flex-grow mb-4 block">
         <Image
-          src={product.featuredImage?.url || '/placeholder.png'}
+          src={imageSrc}
           alt={product.featuredImage?.altText || product.title}
           fill
           className="object-contain mix-blend-multiply"
-          sizes="(max-width: 768px) 280px, 300px"
+          sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
           priority
+          onError={() => setImageError(true)}
         />
       </Link>
       <div className="flex flex-col justify-end space-y-2">
@@ -170,7 +199,7 @@ const ProductCard = ({ product, backgroundColor }: ProductCardProps) => {
             >
               {product.variants.edges?.map(({ node }) => (
                 <option key={node.id} value={node.id}>
-                  {node.selectedOptions?.map(opt => opt.value).join(' - ')}
+                  {formatVariantTitle(node)}
                 </option>
               ))}
             </select>
@@ -199,6 +228,17 @@ const ProductCard = ({ product, backgroundColor }: ProductCardProps) => {
   );
 };
 
+const ProductWrapper = ({ product, backgroundColor }: ProductCardProps) => {
+  try {
+    return <ProductCard product={product} backgroundColor={backgroundColor} />;
+  } catch (error) {
+    console.error("Error rendering product card:", error);
+    return <div className={`rounded-3xl p-5 ${backgroundColor} h-[450px] flex items-center justify-center`}>
+      <p>Unable to display product</p>
+    </div>;
+  }
+};
+
 const ShopByPlant = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -208,25 +248,32 @@ const ShopByPlant = () => {
   const [hasMore, setHasMore] = useState(true);
   const [cursor, setCursor] = useState<string | null>(null);
   const loadMoreRef = useRef(null);
+  // Add state to track swiper initialization issues
+  const [swiperError, setSwiperError] = useState(false);
+  const [swiperInit, setSwiperInit] = useState(false);
 
   // Filter products based on active tab
   const filteredProducts = useMemo(() => {
     if (activeTab === 'all') return products;
 
     const tabProducts = products.filter(product => {
-      // Filter logic based on tab
-      const title = product.title.toLowerCase();
-      switch (activeTab) {
-        case 'houseplants':
-          return title.includes('house') || title.includes('indoor');
-        case 'succulents':
-          return title.includes('succulent') || title.includes('cactus');
-        case 'tropical':
-          return title.includes('tropical') || title.includes('monstera') || title.includes('palm');
-        case 'vines':
-          return title.includes('vine') || title.includes('trailing') || title.includes('pothos');
-        default:
-          return true;
+      try {
+        // Filter logic based on tab
+        const title = product.title.toLowerCase();
+        switch (activeTab) {
+          case 'houseplants':
+            return title.includes('house') || title.includes('indoor');
+          case 'succulents':
+            return title.includes('succulent') || title.includes('cactus');
+          case 'tropical':
+            return title.includes('tropical') || title.includes('monstera') || title.includes('palm');
+          case 'vines':
+            return title.includes('vine') || title.includes('trailing') || title.includes('pothos');
+          default:
+            return true;
+        }
+      } catch (e) {
+        return false;
       }
     });
     
@@ -265,7 +312,7 @@ const ShopByPlant = () => {
                     }
                   }
                 }
-                variants(first: 1) {
+                variants(first: 25) {
                   edges {
                     node {
                       id
@@ -329,7 +376,13 @@ const ShopByPlant = () => {
 
   // Initial fetch
   useEffect(() => {
-    fetchProducts();
+    try {
+      fetchProducts();
+    } catch (error) {
+      console.error("Error in initial product fetch:", error);
+      setError("Failed to load products. Please try again later.");
+      setLoading(false);
+    }
   }, [fetchProducts]);
 
   // Setup intersection observer for infinite scrolling
@@ -362,6 +415,42 @@ const ShopByPlant = () => {
     "bg-[#F2F5F7]", // Light blue
     "bg-[#F7F7F2]"  // Light yellow
   ];
+
+  const handleSwiperError = () => {
+    setSwiperError(true);
+    console.error("Swiper initialization error");
+  };
+
+  const handleSwiperInit = (swiper: any) => {
+    setSwiperInit(true);
+    
+    // Ensure pagination updates when slides change
+    swiper.on('slideChange', function() {
+      try {
+        swiper.pagination.render();
+        swiper.pagination.update();
+      } catch (err) {
+        console.error("Error updating pagination:", err);
+      }
+    });
+    
+    // Bind touch events for better mobile support
+    swiper.on('touchStart', function() {
+      try {
+        document.body.style.overscrollBehavior = 'none';
+      } catch (err) {
+        console.error("Error in touchStart handler:", err);
+      }
+    });
+    
+    swiper.on('touchEnd', function() {
+      try {
+        document.body.style.overscrollBehavior = '';
+      } catch (err) {
+        console.error("Error in touchEnd handler:", err);
+      }
+    });
+  };
 
   return (
     <section className="py-16 bg-[#FDF6EF]">
@@ -398,7 +487,7 @@ const ShopByPlant = () => {
             SUPPLEMENTS
           </Link>
           <Link 
-            href="/category/all"
+            href="/shop"
             className="bg-[#FF6B6B] text-white px-6 py-2.5 rounded-full font-medium hover:bg-[#ff5252] transition-colors"
             onClick={() => setActiveTab('all')}
           >
@@ -412,56 +501,102 @@ const ShopByPlant = () => {
             <div className="w-full text-center py-12">Loading products...</div>
           ) : error ? (
             <div className="w-full text-center py-12 text-red-500">{error}</div>
-          ) : filteredProducts && filteredProducts.length > 0 ? (
-            <Swiper
-              modules={[Navigation, Pagination, A11y]}
-              spaceBetween={24}
-              slidesPerView={1}
-              navigation={{
-                nextEl: '.swiper-button-next',
-                prevEl: '.swiper-button-prev',
-              }}
-              pagination={{ 
-                clickable: true,
-                el: '.swiper-pagination',
-                bulletActiveClass: 'swiper-pagination-bullet-active custom-bullet-active',
-                bulletClass: 'swiper-pagination-bullet custom-bullet',
-              }}
-              breakpoints={{
-                640: {
-                  slidesPerView: 2,
-                },
-                768: {
-                  slidesPerView: 3,
-                },
-                1024: {
-                  slidesPerView: 4,
-                },
-              }}
-              className="mySwiper"
-            >
-              {filteredProducts.map((product, index) => (
-                <SwiperSlide key={product.id}>
-                  <ProductCard 
-                    product={product}
-                    backgroundColor={backgroundColors[index % backgroundColors.length]}
-                  />
-                </SwiperSlide>
+          ) : swiperError ? (
+            // Fallback to grid layout if Swiper fails
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredProducts.slice(0, 8).map((product, index) => (
+                <ProductWrapper
+                  key={product.id}
+                  product={product}
+                  backgroundColor={backgroundColors[index % backgroundColors.length]}
+                />
               ))}
-              <div className="swiper-button-prev !text-gray-800 !w-10 !h-10 !bg-white/80 hover:!bg-white rounded-full shadow-lg !left-0 after:!text-lg"></div>
-              <div className="swiper-button-next !text-gray-800 !w-10 !h-10 !bg-white/80 hover:!bg-white rounded-full shadow-lg !right-0 after:!text-lg"></div>
-            </Swiper>
+            </div>
+          ) : filteredProducts && filteredProducts.length > 0 ? (
+            <div className="swiper-container">
+              <Swiper
+                modules={[Navigation, Pagination, A11y, Virtual]}
+                spaceBetween={16}
+                slidesPerView={1}
+                virtual={{
+                  enabled: true,
+                  addSlidesAfter: 2,
+                  addSlidesBefore: 2
+                }}
+                navigation={{
+                  enabled: true,
+                  disabledClass: 'swiper-button-disabled',
+                  nextEl: '.swiper-button-next',
+                  prevEl: '.swiper-button-prev',
+                }}
+                pagination={{ 
+                  enabled: true,
+                  clickable: true,
+                  el: '.swiper-pagination',
+                  renderBullet: function (index, className) {
+                    return '<span class="' + className + '" role="button" aria-label="Go to slide ' + (index + 1) + '"></span>';
+                  },
+                }}
+                breakpoints={{
+                  640: {
+                    slidesPerView: 2,
+                    spaceBetween: 20,
+                  },
+                  768: {
+                    slidesPerView: 3,
+                    spaceBetween: 24,
+                  },
+                  1024: {
+                    slidesPerView: 4,
+                    spaceBetween: 24,
+                  },
+                }}
+                className="mySwiper"
+                onError={handleSwiperError}
+                onInit={handleSwiperInit}
+                watchSlidesProgress={true}
+                touchRatio={1.5}
+                touchReleaseOnEdges={true}
+                touchStartPreventDefault={false}
+                resistanceRatio={0.65}
+              >
+                {filteredProducts.map((product, index) => (
+                  <SwiperSlide key={product.id} virtualIndex={index}>
+                    <ProductWrapper
+                      product={product}
+                      backgroundColor={backgroundColors[index % backgroundColors.length]}
+                    />
+                  </SwiperSlide>
+                ))}
+                <div className="swiper-button-prev !text-gray-800 !w-10 !h-10 !bg-white/80 hover:!bg-white rounded-full shadow-lg !left-1 md:!left-0 after:!text-lg"></div>
+                <div className="swiper-button-next !text-gray-800 !w-10 !h-10 !bg-white/80 hover:!bg-white rounded-full shadow-lg !right-1 md:!right-0 after:!text-lg"></div>
+              </Swiper>
+              <div className="swiper-pagination flex justify-center mt-6 gap-3"></div>
+            </div>
           ) : (
             <div className="w-full text-center py-12">No products found for this category</div>
           )}
-          
-          {/* Custom pagination container */}
-          <div className="swiper-pagination flex justify-center mt-6 gap-3"></div>
         </div>
       </div>
       
       {/* Custom styles for Swiper */}
       <style jsx global>{`
+        .swiper-container {
+          width: 100%;
+          position: relative;
+          overflow: hidden;
+          touch-action: pan-y;
+        }
+        
+        .swiper-wrapper {
+          touch-action: pan-x;
+        }
+        
+        .swiper-slide {
+          touch-action: pan-x;
+          height: auto !important;
+        }
+        
         .swiper-button-next:after, .swiper-button-prev:after {
           font-size: 18px;
           font-weight: bold;
@@ -477,6 +612,7 @@ const ShopByPlant = () => {
           border-radius: 50%;
           color: #333;
           transition: background-color 0.3s ease;
+          z-index: 10;
         }
         
         .swiper-button-next:hover, .swiper-button-prev:hover {
@@ -488,12 +624,16 @@ const ShopByPlant = () => {
         }
         
         .swiper-pagination {
-          position: relative;
-          bottom: 0;
+          position: relative !important;
+          bottom: 0 !important;
           margin-top: 24px;
+          width: 100%;
+          display: flex;
+          justify-content: center;
+          gap: 6px;
         }
 
-        .custom-bullet {
+        .swiper-pagination-bullet {
           display: inline-block;
           width: 10px;
           height: 10px;
@@ -501,12 +641,51 @@ const ShopByPlant = () => {
           background-color: #e5e5e5;
           margin: 0 6px;
           transition: all 0.3s ease;
+          opacity: 1;
         }
 
-        .custom-bullet-active {
+        .swiper-pagination-bullet-active {
           background-color: #FF6B6B;
           width: 20px;
           border-radius: 10px;
+        }
+        
+        @media (max-width: 640px) {
+          .swiper {
+            padding: 0 15px;
+            overflow: hidden;
+            touch-action: pan-y;
+          }
+          
+          .swiper-button-next, .swiper-button-prev {
+            width: 36px;
+            height: 36px;
+          }
+          
+          .swiper-button-next:after, .swiper-button-prev:after {
+            font-size: 16px;
+          }
+          
+          .swiper-slide {
+            height: auto;
+          }
+        }
+        
+        @supports (-webkit-touch-callout: none) {
+          /* Fix for iOS touch issues */
+          .swiper-container {
+            height: auto;
+            min-height: 460px;
+          }
+          
+          .swiper-wrapper {
+            height: auto;
+          }
+          
+          /* Additional iOS fixes */
+          html, body {
+            overscroll-behavior-y: none;
+          }
         }
       `}</style>
 

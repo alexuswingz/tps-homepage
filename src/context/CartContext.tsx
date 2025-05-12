@@ -16,6 +16,11 @@ interface CartItem {
   quantity: number;
 }
 
+interface DiscountResult {
+  success: boolean;
+  errorMessage?: string;
+}
+
 interface CartContextType {
   cart: CartItem[];
   addToCart: (item: Omit<CartItem, 'quantity'> & { quantity?: number }) => void;
@@ -23,19 +28,35 @@ interface CartContextType {
   updateQuantity: (variantId: string, quantity: number) => void;
   clearCart: () => void;
   cartCount: number;
+  discountCode: string;
+  setDiscountCode: (code: string) => void;
+  applyDiscountCode: (code: string) => DiscountResult;
+  removeDiscountCode: () => void;
+  hasValidDiscount: boolean;
+  calculateDiscountedTotal: (subtotal: number) => number;
+  discountAmount: number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 // Create a unique storage key with a version number to avoid conflicts
 const CART_STORAGE_KEY = 'tps_cart_v1';
+const DISCOUNT_STORAGE_KEY = 'tps_discount_v1';
+
+// Available discount codes
+const DISCOUNT_CODES = {
+  BUY3SAVE10: { type: 'fixed', amount: 10 }
+};
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartCount, setCartCount] = useState(0);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [discountCode, setDiscountCode] = useState('');
+  const [hasValidDiscount, setHasValidDiscount] = useState(false);
+  const [discountAmount, setDiscountAmount] = useState(0);
 
-  // Load cart from localStorage on initial render
+  // Load cart and discount from localStorage on initial render
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -46,6 +67,14 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
           const parsedCart = JSON.parse(savedCart);
           setCart(parsedCart);
           console.log('Cart loaded:', parsedCart);
+        }
+        
+        const savedDiscount = localStorage.getItem(DISCOUNT_STORAGE_KEY);
+        if (savedDiscount) {
+          const { code, valid, amount } = JSON.parse(savedDiscount);
+          setDiscountCode(code);
+          setHasValidDiscount(valid);
+          setDiscountAmount(amount);
         }
       } catch (e) {
         console.error('Failed to parse cart from localStorage:', e);
@@ -63,8 +92,33 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       const newCount = cart.reduce((total, item) => total + item.quantity, 0);
       setCartCount(newCount);
       console.log('Updated cart count:', newCount);
+      
+      // Auto-apply BUY3SAVE10 discount when cart has 3 or more items
+      if (newCount >= 3 && !hasValidDiscount) {
+        // Apply the discount code
+        const normalizedCode = 'BUY3SAVE10';
+        setDiscountCode(normalizedCode);
+        setHasValidDiscount(true);
+        setDiscountAmount(DISCOUNT_CODES[normalizedCode as keyof typeof DISCOUNT_CODES].amount);
+      } else if (newCount < 3 && discountCode === 'BUY3SAVE10') {
+        // Remove the discount if items are removed and total is less than 3
+        setDiscountCode('');
+        setHasValidDiscount(false);
+        setDiscountAmount(0);
+      }
     }
-  }, [cart, isInitialized]);
+  }, [cart, isInitialized, hasValidDiscount, discountCode]);
+
+  // Save discount state to localStorage
+  useEffect(() => {
+    if (isInitialized && typeof window !== 'undefined') {
+      localStorage.setItem(DISCOUNT_STORAGE_KEY, JSON.stringify({
+        code: discountCode,
+        valid: hasValidDiscount,
+        amount: discountAmount
+      }));
+    }
+  }, [discountCode, hasValidDiscount, discountAmount, isInitialized]);
 
   const addToCart = (item: Omit<CartItem, 'quantity'> & { quantity?: number }) => {
     console.log('addToCart called with:', item);
@@ -122,8 +176,66 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     setCart([]);
   };
 
+  // Apply a discount code and return whether it was valid
+  const applyDiscountCode = (code: string) => {
+    const normalizedCode = code.trim().toUpperCase();
+    setDiscountCode(normalizedCode);
+    
+    // Special handling for BUY3SAVE10
+    if (normalizedCode === 'BUY3SAVE10') {
+      const totalItems = cart.reduce((total, item) => total + item.quantity, 0);
+      if (totalItems < 3) {
+        // Not enough items in cart for this discount
+        setHasValidDiscount(false);
+        setDiscountAmount(0);
+        return { success: false, errorMessage: 'You need 3 or more products to use this discount code.' };
+      }
+    }
+    
+    // Check if the code is valid
+    if (normalizedCode in DISCOUNT_CODES) {
+      const discount = DISCOUNT_CODES[normalizedCode as keyof typeof DISCOUNT_CODES];
+      setHasValidDiscount(true);
+      setDiscountAmount(discount.amount);
+      return { success: true };
+    } else {
+      setHasValidDiscount(false);
+      setDiscountAmount(0);
+      return { success: false, errorMessage: 'Invalid discount code.' };
+    }
+  };
+
+  // Remove any applied discount code
+  const removeDiscountCode = () => {
+    setDiscountCode('');
+    setHasValidDiscount(false);
+    setDiscountAmount(0);
+  };
+
+  // Calculate the total after applying the discount
+  const calculateDiscountedTotal = (subtotal: number) => {
+    if (!hasValidDiscount) return subtotal;
+    
+    // Check if the discount should be applied based on the cart contents
+    if (discountCode === "BUY3SAVE10") {
+      // Count total number of items
+      const totalItems = cart.reduce((total, item) => total + item.quantity, 0);
+      
+      // If total items is 3 or more, apply the discount
+      if (totalItems >= 3) {
+        return Math.max(0, subtotal - discountAmount);
+      } else {
+        // Not enough items for this discount code
+        return subtotal;
+      }
+    }
+    
+    // For other discount codes, simply apply the discount amount
+    return Math.max(0, subtotal - discountAmount);
+  };
+
   // Log the current cart state for debugging
-  console.log('Current cart state:', { cart, cartCount, isInitialized });
+  console.log('Current cart state:', { cart, cartCount, isInitialized, discountCode, hasValidDiscount });
 
   return (
     <CartContext.Provider value={{ 
@@ -132,7 +244,14 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       removeFromCart, 
       updateQuantity, 
       clearCart, 
-      cartCount 
+      cartCount,
+      discountCode,
+      setDiscountCode,
+      applyDiscountCode,
+      removeDiscountCode,
+      hasValidDiscount,
+      calculateDiscountedTotal,
+      discountAmount
     }}>
       {children}
     </CartContext.Provider>

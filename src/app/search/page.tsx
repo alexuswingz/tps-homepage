@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import type { Product } from '@/types/shopify';
+import { searchProducts } from '@/lib/shopify';
 
 function SearchResultsContent() {
   const searchParams = useSearchParams();
@@ -19,10 +20,14 @@ function SearchResultsContent() {
       try {
         setLoading(true);
         setError(null);
-        const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
-        if (!response.ok) throw new Error('Failed to fetch search results');
-        const data = await response.json();
-        setProducts(data.products);
+        
+        // Use client-side search instead of API route
+        if (query.trim()) {
+          const results = await searchProducts(query);
+          setProducts(results);
+        } else {
+          setProducts([]);
+        }
       } catch (err) {
         setError('Failed to load search results');
         console.error(err);

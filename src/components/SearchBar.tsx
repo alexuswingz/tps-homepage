@@ -17,6 +17,7 @@ const SearchBar = ({ initialQuery = '' }: SearchBarProps) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (query.trim()) {
+      // Client-side navigation to search page
       router.push(`/search?q=${encodeURIComponent(query.trim())}`);
     }
   };

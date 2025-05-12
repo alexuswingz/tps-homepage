@@ -1,10 +1,11 @@
 "use client";
 
-import { Fragment, useEffect } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { XMarkIcon, MinusIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, MinusIcon, PlusIcon, TrashIcon, XCircleIcon } from '@heroicons/react/24/outline';
 import { useCart } from '@/context/CartContext';
 import Image from 'next/image';
+import { createCheckoutUrl } from '@/lib/shopify';
 
 interface CartSlideOverProps {
   isOpen: boolean;
@@ -12,7 +13,24 @@ interface CartSlideOverProps {
 }
 
 export default function CartSlideOver({ isOpen, setIsOpen }: CartSlideOverProps) {
-  const { cart, removeFromCart, updateQuantity, cartCount } = useCart();
+  const { 
+    cart, 
+    removeFromCart, 
+    updateQuantity, 
+    cartCount,
+    discountCode,
+    setDiscountCode,
+    applyDiscountCode,
+    removeDiscountCode,
+    hasValidDiscount,
+    calculateDiscountedTotal,
+    discountAmount
+  } = useCart();
+
+  const [checkoutUrl, setCheckoutUrl] = useState('');
+  const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
+  const [inputDiscountCode, setInputDiscountCode] = useState('');
+  const [discountError, setDiscountError] = useState('');
 
   // Handle body scroll lock
   useEffect(() => {
@@ -29,6 +47,36 @@ export default function CartSlideOver({ isOpen, setIsOpen }: CartSlideOverProps)
     };
   }, [isOpen]);
 
+  // Generate checkout URL when cart changes or discount changes
+  useEffect(() => {
+    const generateCheckoutUrl = async () => {
+      if (cart.length > 0) {
+        try {
+          setIsCheckoutLoading(true);
+          const url = await createCheckoutUrl(cart, discountCode);
+          if (url) {
+            setCheckoutUrl(url);
+          }
+        } catch (error) {
+          console.error('Error generating checkout URL:', error);
+        } finally {
+          setIsCheckoutLoading(false);
+        }
+      }
+    };
+
+    generateCheckoutUrl();
+  }, [cart, discountCode]);
+
+  // Handle checkout click
+  const handleCheckoutClick = (e: React.MouseEvent) => {
+    if (!checkoutUrl) {
+      e.preventDefault();
+      alert('Unable to create checkout. Please try again later.');
+    }
+    // If we have a URL, let the link work normally
+  };
+
   const formatPrice = (price: { amount: string; currencyCode: string }) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -42,15 +90,32 @@ export default function CartSlideOver({ isOpen, setIsOpen }: CartSlideOverProps)
     }, 0);
   };
 
-  const calculateProgress = () => {
-    const total = calculateTotal();
-    const freeShippingThreshold = 75;
-    const remaining = Math.max(0, freeShippingThreshold - total);
-    const progress = Math.min(100, (total / freeShippingThreshold) * 100);
-    return { progress, remaining };
+  const handleApplyDiscount = () => {
+    setDiscountError('');
+    if (!inputDiscountCode.trim()) {
+      setDiscountError('Please enter a discount code');
+      return;
+    }
+    
+    const result = applyDiscountCode(inputDiscountCode);
+    if (!result.success) {
+      setDiscountError(result.errorMessage || 'Invalid discount code');
+    } else {
+      setInputDiscountCode('');
+    }
   };
 
-  const { progress, remaining } = calculateProgress();
+  const calculateProgress = () => {
+    const totalItems = cart.reduce((total, item) => total + item.quantity, 0);
+    const targetItemCount = 3;
+    const remaining = Math.max(0, targetItemCount - totalItems);
+    const progress = Math.min(100, (totalItems / targetItemCount) * 100);
+    return { progress, remaining, totalItems };
+  };
+
+  const { progress, remaining, totalItems } = calculateProgress();
+  const subtotal = calculateTotal();
+  const finalTotal = calculateDiscountedTotal(subtotal);
 
   return (
     <Transition.Root show={isOpen} as={Fragment}>
@@ -101,13 +166,13 @@ export default function CartSlideOver({ isOpen, setIsOpen }: CartSlideOverProps)
                     </div>
                   </div>
 
-                  {/* Free shipping progress */}
+                  {/* BUY3SAVE10 progress bar */}
                   <div className="mt-8">
                     <p className="text-center text-sm text-gray-600 mb-2">
                       {remaining > 0 ? (
-                        `You are ${formatPrice({ amount: remaining.toString(), currencyCode: 'USD' })} away from FREE SHIPPING!`
+                        `Add ${remaining} more item${remaining !== 1 ? 's' : ''} to get $10 off!`
                       ) : (
-                        'You\'ve earned FREE SHIPPING! 🎉'
+                        'You\'ve earned $10 off with BUY3SAVE10! 🎉'
                       )}
                     </p>
                     <div className="w-full bg-gray-200 rounded-full h-2.5">
@@ -121,13 +186,7 @@ export default function CartSlideOver({ isOpen, setIsOpen }: CartSlideOverProps)
                         <div className="w-4 h-4 rounded-full bg-[#8B7355] flex items-center justify-center">
                           <span className="text-white text-xs">✓</span>
                         </div>
-                        <span className="text-xs">Free Shipping</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 rounded-full border border-[#8B7355] flex items-center justify-center">
-                          <span className="text-[#8B7355] text-xs">✓</span>
-                        </div>
-                        <span className="text-xs">Shot Glass Set</span>
+                        <span className="text-xs">{totalItems}/3 Products</span>
                       </div>
                     </div>
                   </div>
@@ -201,19 +260,92 @@ export default function CartSlideOver({ isOpen, setIsOpen }: CartSlideOverProps)
 
                 {cart.length > 0 && (
                   <div className="border-t border-gray-200 px-4 py-6 sm:px-6">
-                    <div className="flex justify-between text-base font-medium text-gray-900 mb-4">
-                      <p>Subtotal</p>
-                      <p>{formatPrice({ amount: calculateTotal().toString(), currencyCode: 'USD' })}</p>
+                    {/* Discount Code Section */}
+                    <div className="mb-4">
+                      {hasValidDiscount ? (
+                        <div className="flex items-center justify-between bg-gray-50 p-3 rounded-md">
+                          <div>
+                            <span className="font-medium text-green-600">Discount applied:</span>
+                            <span className="ml-2 text-gray-700">{discountCode}</span>
+                            {discountCode === 'BUY3SAVE10' && (
+                              <p className="text-xs text-gray-500 mt-1">$10 discount automatically applied for 3+ products!</p>
+                            )}
+                          </div>
+                          {discountCode !== 'BUY3SAVE10' && (
+                            <button 
+                              onClick={removeDiscountCode}
+                              className="text-gray-500 hover:text-red-500"
+                            >
+                              <XCircleIcon className="h-5 w-5" />
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex space-x-2">
+                            <input
+                              type="text"
+                              placeholder="Discount code"
+                              className="flex-1 border border-gray-300 rounded-l-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#8B7355]"
+                              value={inputDiscountCode}
+                              onChange={(e) => setInputDiscountCode(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  handleApplyDiscount();
+                                }
+                              }}
+                            />
+                            <button
+                              onClick={handleApplyDiscount}
+                              className="bg-[#8B7355] text-white px-4 py-2 rounded-r-md text-sm hover:bg-[#7A6548]"
+                            >
+                              Apply
+                            </button>
+                          </div>
+                          {discountError && (
+                            <p className="text-red-500 text-xs mt-1">{discountError}</p>
+                          )}
+                          {!discountError && (
+                            <p className="text-gray-500 text-xs mt-1">BUY3SAVE10 will automatically apply when you have 3+ products</p>
+                          )}
+                        </>
+                      )}
                     </div>
+                    
+                    <div className="flex justify-between text-base font-medium text-gray-900 mb-2">
+                      <p>Subtotal</p>
+                      <p>{formatPrice({ amount: subtotal.toString(), currencyCode: 'USD' })}</p>
+                    </div>
+                    
+                    {hasValidDiscount && (
+                      <div className="flex justify-between text-base font-medium text-green-600 mb-2">
+                        <p>Discount</p>
+                        <p>-{formatPrice({ amount: discountAmount.toString(), currencyCode: 'USD' })}</p>
+                      </div>
+                    )}
+                    
                     <div className="flex justify-between text-sm text-gray-500 mb-4">
                       <p>Shipping</p>
                       <p>{remaining <= 0 ? 'FREE' : 'Calculated at checkout'}</p>
                     </div>
-                    <button
-                      className="w-full bg-[#FF6B6B] px-6 py-3 text-center text-base font-medium text-white shadow-sm hover:bg-[#ff5252] rounded-full"
+                    
+                    <div className="h-px bg-gray-200 my-3"></div>
+                    
+                    <div className="flex justify-between text-lg font-bold text-gray-900 mb-4">
+                      <p>Total</p>
+                      <p>{formatPrice({ amount: finalTotal.toString(), currencyCode: 'USD' })}</p>
+                    </div>
+                    
+                    <a
+                      href={checkoutUrl}
+                      onClick={handleCheckoutClick}
+                      className={`w-full bg-[#FF6B6B] px-6 py-3 text-center text-base font-medium text-white shadow-sm hover:bg-[#ff5252] rounded-full block ${isCheckoutLoading ? 'opacity-70 cursor-wait' : ''}`}
                     >
-                      Checkout ${calculateTotal().toFixed(2)}
-                    </button>
+                      {isCheckoutLoading ? 'Preparing Checkout...' : `Checkout $${finalTotal.toFixed(2)}`}
+                    </a>
+                    <p className="text-xs text-gray-500 text-center mt-2">
+                      You'll be redirected to our secure checkout page
+                    </p>
                     <div className="mt-6 flex justify-center text-center text-sm text-gray-500">
                       <button
                         type="button"

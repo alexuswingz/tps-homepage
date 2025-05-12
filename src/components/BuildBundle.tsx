@@ -203,6 +203,13 @@ const BuildBundle = () => {
   };
 
   const handleAddToBundle = (product: Product) => {
+    // First, check if the product has stock available
+    const variant = product.variants.edges[0].node;
+    if (variant.quantityAvailable <= 0) {
+      toast.error(`Sorry, ${product.title} is out of stock`);
+      return;
+    }
+
     // Check if product is already in the bundle
     const existingIndex = selectedProducts.findIndex(item => item.product.id === product.id);
     
@@ -210,6 +217,12 @@ const BuildBundle = () => {
       // Product exists, increment quantity
       const updatedProducts = [...selectedProducts];
       const newQuantity = updatedProducts[existingIndex].quantity + 1;
+      
+      // Check if we have enough stock for the requested quantity
+      if (variant.quantityAvailable < newQuantity) {
+        toast.error(`Sorry, only ${variant.quantityAvailable} units of ${product.title} available`);
+        return;
+      }
       
       // Calculate total quantity including this new addition
       const totalQuantity = totalProductCount() + 1;
@@ -235,8 +248,6 @@ const BuildBundle = () => {
       return;
     }
     
-    const variant = product.variants.edges[0].node;
-    
     setSelectedProducts([...selectedProducts, {
       product,
       variant,
@@ -256,6 +267,13 @@ const BuildBundle = () => {
   const handleUpdateQuantity = (index: number, change: number) => {
     const newSelectedProducts = [...selectedProducts];
     const newQuantity = newSelectedProducts[index].quantity + change;
+    
+    // Check if we have enough stock for the requested quantity
+    const variant = newSelectedProducts[index].variant;
+    if (newQuantity > variant.quantityAvailable) {
+      toast.error(`Sorry, only ${variant.quantityAvailable} units of ${newSelectedProducts[index].product.title} available`);
+      return;
+    }
     
     // Calculate what the new total would be
     const currentTotal = totalProductCount();
@@ -304,6 +322,14 @@ const BuildBundle = () => {
       return;
     }
 
+    // Check stock availability for all products
+    for (const item of selectedProducts) {
+      if (item.variant.quantityAvailable < item.quantity) {
+        toast.error(`Sorry, only ${item.variant.quantityAvailable} units of ${item.product.title} available`);
+        return;
+      }
+    }
+
     try {
       // Add each product to cart with its quantity
       selectedProducts.forEach(({ product, variant, quantity }) => {
@@ -337,6 +363,11 @@ const BuildBundle = () => {
       console.error('Error adding bundle to cart:', error);
       toast.error('There was an error adding your bundle to cart. Please try again.');
     }
+  };
+
+  // Update button state to reflect stock availability
+  const isOutOfStock = (product: Product) => {
+    return product.variants.edges[0].node.quantityAvailable <= 0;
   };
 
   return (
@@ -395,7 +426,7 @@ const BuildBundle = () => {
                         <button 
                           onClick={() => handleUpdateQuantity(index, 1)}
                           className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-300"
-                          disabled={totalProductCount() >= 3}
+                          disabled={totalProductCount() >= 3 || selectedProduct.quantity >= selectedProduct.variant.quantityAvailable}
                         >
                           +
                         </button>
@@ -537,6 +568,11 @@ const BuildBundle = () => {
                               BEST SELLER!
                             </div>
                           )}
+                          {isOutOfStock(product) && (
+                            <div className="absolute top-2 right-2 bg-gray-700 text-white px-3 py-1 rounded-full text-xs font-bold">
+                              OUT OF STOCK
+                            </div>
+                          )}
                         </div>
                         
                         <div className="p-4">
@@ -563,11 +599,18 @@ const BuildBundle = () => {
                           
                           <button 
                             onClick={() => handleAddToBundle(product)}
-                            className="w-full bg-[#FF6B6B] text-white py-2 rounded-full text-sm uppercase font-medium hover:bg-[#ff5252] transition-colors"
-                            disabled={totalProductCount() >= 3 || selectedProducts.some(item => item.product.id === product.id)}
+                            className={`w-full py-2 rounded-full text-sm uppercase font-medium 
+                              ${selectedProducts.some(item => item.product.id === product.id) 
+                                ? 'bg-green-500 text-white hover:bg-green-600' 
+                                : isOutOfStock(product)
+                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                : 'bg-[#FF6B6B] text-white hover:bg-[#ff5252]'} transition-colors`}
+                            disabled={totalProductCount() >= 3 || selectedProducts.some(item => item.product.id === product.id) || isOutOfStock(product)}
                           >
                             {selectedProducts.some(item => item.product.id === product.id) 
                               ? 'ADDED TO BUNDLE' 
+                              : isOutOfStock(product)
+                              ? 'OUT OF STOCK'
                               : 'ADD TO BUNDLE'}
                           </button>
                         </div>
@@ -620,6 +663,11 @@ const BuildBundle = () => {
                             BEST SELLER!
                           </div>
                         )}
+                        {isOutOfStock(product) && (
+                          <div className="absolute top-2 right-2 bg-gray-700 text-white px-3 py-1 rounded-full text-xs font-bold">
+                            OUT OF STOCK
+                          </div>
+                        )}
                       </div>
                       
                       <div className="p-4">
@@ -651,11 +699,18 @@ const BuildBundle = () => {
                         
                         <button 
                           onClick={() => handleAddToBundle(product)}
-                          className="w-full bg-[#FF6B6B] text-white py-2 rounded-full text-sm uppercase font-medium hover:bg-[#ff5252] transition-colors"
-                          disabled={totalProductCount() >= 3 || selectedProducts.some(item => item.product.id === product.id)}
+                          className={`w-full py-2 rounded-full text-sm uppercase font-medium 
+                            ${selectedProducts.some(item => item.product.id === product.id) 
+                              ? 'bg-green-500 text-white hover:bg-green-600' 
+                              : isOutOfStock(product)
+                              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                              : 'bg-[#FF6B6B] text-white hover:bg-[#ff5252]'} transition-colors`}
+                          disabled={totalProductCount() >= 3 || selectedProducts.some(item => item.product.id === product.id) || isOutOfStock(product)}
                         >
                           {selectedProducts.some(item => item.product.id === product.id) 
                             ? 'ADDED TO BUNDLE' 
+                            : isOutOfStock(product)
+                            ? 'OUT OF STOCK'
                             : 'ADD TO BUNDLE'}
                         </button>
                       </div>
@@ -707,6 +762,11 @@ const BuildBundle = () => {
                                   BEST SELLER!
                                 </div>
                               )}
+                              {isOutOfStock(product) && (
+                                <div className="absolute top-2 right-2 bg-gray-700 text-white px-3 py-1 rounded-full text-xs font-bold">
+                                  OUT OF STOCK
+                                </div>
+                              )}
                             </div>
                             
                             <div className="p-4">
@@ -738,11 +798,18 @@ const BuildBundle = () => {
                               
                               <button 
                                 onClick={() => handleAddToBundle(product)}
-                                className="w-full bg-[#FF6B6B] text-white py-2 rounded-full text-sm uppercase font-medium hover:bg-[#ff5252] transition-colors"
-                                disabled={selectedProducts.length >= 3 || selectedProducts.some(item => item.product.id === product.id)}
+                                className={`w-full py-2 rounded-full text-sm uppercase font-medium 
+                                  ${selectedProducts.some(item => item.product.id === product.id) 
+                                    ? 'bg-green-500 text-white hover:bg-green-600' 
+                                    : isOutOfStock(product)
+                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                    : 'bg-[#FF6B6B] text-white hover:bg-[#ff5252]'} transition-colors`}
+                                disabled={totalProductCount() >= 3 || selectedProducts.some(item => item.product.id === product.id) || isOutOfStock(product)}
                               >
                                 {selectedProducts.some(item => item.product.id === product.id) 
                                   ? 'ADDED TO BUNDLE' 
+                                  : isOutOfStock(product)
+                                  ? 'OUT OF STOCK'
                                   : 'ADD TO BUNDLE'}
                               </button>
                             </div>
@@ -778,6 +845,11 @@ const BuildBundle = () => {
                             BEST SELLER!
                           </div>
                         )}
+                        {isOutOfStock(product) && (
+                          <div className="absolute top-2 right-2 bg-gray-700 text-white px-3 py-1 rounded-full text-xs font-bold">
+                            OUT OF STOCK
+                          </div>
+                        )}
                       </div>
                       
                       <div className="p-4">
@@ -804,11 +876,18 @@ const BuildBundle = () => {
                         
                         <button 
                           onClick={() => handleAddToBundle(product)}
-                          className="w-full bg-[#FF6B6B] text-white py-2 rounded-full text-sm uppercase font-medium hover:bg-[#ff5252] transition-colors"
-                          disabled={totalProductCount() >= 3 || selectedProducts.some(item => item.product.id === product.id)}
+                          className={`w-full py-2 rounded-full text-sm uppercase font-medium 
+                            ${selectedProducts.some(item => item.product.id === product.id) 
+                              ? 'bg-green-500 text-white hover:bg-green-600' 
+                              : isOutOfStock(product)
+                              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                              : 'bg-[#FF6B6B] text-white hover:bg-[#ff5252]'} transition-colors`}
+                          disabled={totalProductCount() >= 3 || selectedProducts.some(item => item.product.id === product.id) || isOutOfStock(product)}
                         >
                           {selectedProducts.some(item => item.product.id === product.id) 
                             ? 'ADDED TO BUNDLE' 
+                            : isOutOfStock(product)
+                            ? 'OUT OF STOCK'
                             : 'ADD TO BUNDLE'}
                         </button>
                       </div>
@@ -840,6 +919,11 @@ const BuildBundle = () => {
                               BEST SELLER!
                             </div>
                           )}
+                          {isOutOfStock(product) && (
+                            <div className="absolute top-2 right-2 bg-gray-700 text-white px-3 py-1 rounded-full text-xs font-bold">
+                              OUT OF STOCK
+                            </div>
+                          )}
                         </div>
                         
                         <div className="p-4">
@@ -866,11 +950,18 @@ const BuildBundle = () => {
                           
                           <button 
                             onClick={() => handleAddToBundle(product)}
-                            className="w-full bg-[#FF6B6B] text-white py-2 rounded-full text-sm uppercase font-medium hover:bg-[#ff5252] transition-colors"
-                            disabled={totalProductCount() >= 3 || selectedProducts.some(item => item.product.id === product.id)}
+                            className={`w-full py-2 rounded-full text-sm uppercase font-medium 
+                              ${selectedProducts.some(item => item.product.id === product.id) 
+                                ? 'bg-green-500 text-white hover:bg-green-600' 
+                                : isOutOfStock(product)
+                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                : 'bg-[#FF6B6B] text-white hover:bg-[#ff5252]'} transition-colors`}
+                            disabled={totalProductCount() >= 3 || selectedProducts.some(item => item.product.id === product.id) || isOutOfStock(product)}
                           >
                             {selectedProducts.some(item => item.product.id === product.id) 
                               ? 'ADDED TO BUNDLE' 
+                              : isOutOfStock(product)
+                              ? 'OUT OF STOCK'
                               : 'ADD TO BUNDLE'}
                           </button>
                         </div>
