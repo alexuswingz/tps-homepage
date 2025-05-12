@@ -28,27 +28,86 @@ const mockPlants = [
 export async function POST(request: NextRequest) {
   try {
     console.log('Received request for plant identification');
+
+    // Check for proper Content-Type header
+    const contentType = request.headers.get('content-type') || '';
+    console.log('Request Content-Type:', contentType);
+    
+    if (!contentType.includes('multipart/form-data') && !contentType.includes('boundary')) {
+      console.warn('Request may not have proper Content-Type header, common on some mobile browsers');
+    }
+    
     // Parse the form data to get the image
-    const formData = await request.formData();
+    let formData;
+    try {
+      formData = await request.formData();
+    } catch (error) {
+      console.error('Error parsing form data:', error);
+      return NextResponse.json(
+        { success: false, error: 'Error parsing form data. If on mobile, try using a different browser or device.' },
+        { status: 400 }
+      );
+    }
+    
+    // Log all form data keys for debugging
+    const formDataKeys = Array.from(formData.keys());
+    console.log('Form data keys:', formDataKeys);
+    
     const imageFile = formData.get('image') as File | null;
 
     if (!imageFile) {
-      console.error('No image file provided');
+      console.error('No image file provided in form data');
       return NextResponse.json(
-        { success: false, error: 'No image provided' },
+        { success: false, error: 'No image provided. Please try again with a different image.' },
         { status: 400 }
       );
     }
 
     console.log('Image file received:', imageFile.name, imageFile.type, imageFile.size);
 
+    // Validate the image file
+    if (!imageFile.type.startsWith('image/')) {
+      console.error('Invalid file type:', imageFile.type);
+      return NextResponse.json(
+        { success: false, error: 'Invalid file type. Please upload an image.' },
+        { status: 400 }
+      );
+    }
+
+    if (imageFile.size > 5 * 1024 * 1024) { // 5MB limit
+      console.error('File too large:', imageFile.size);
+      return NextResponse.json(
+        { success: false, error: 'Image file too large. Please upload an image under 5MB.' },
+        { status: 400 }
+      );
+    }
+
     try {
       // Convert the image to base64
-      const arrayBuffer = await imageFile.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-      const base64Image = buffer.toString('base64');
-      
-      console.log('Image converted to base64');
+      let base64Image;
+      try {
+        const arrayBuffer = await imageFile.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        base64Image = buffer.toString('base64');
+        console.log('Image converted to base64, length:', base64Image.length);
+        
+        if (!base64Image || base64Image.length < 100) {
+          console.error('Base64 conversion produced invalid result');
+          throw new Error('Failed to process the image properly');
+        }
+      } catch (error) {
+        console.error('Error converting image to base64:', error);
+        
+        // If the file is present but conversion failed, use the fallback data
+        // This often happens with some mobile browsers
+        console.log('Using fallback data due to image processing error');
+        return NextResponse.json({
+          success: true,
+          result: mockPlants[0],
+          fallback: true,
+          error_info: 'Image processing failed, showing demo data instead'
+        });
+      }
       
       // Prepare data for Plant.ID API
       const plantIdData = {
@@ -117,7 +176,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         result: mockPlants[0],
-        fallback: true
+        fallback: true,
+        error_info: apiError instanceof Error ? apiError.message : 'API connection issue'
       });
     }
   } catch (error) {

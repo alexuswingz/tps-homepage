@@ -63,6 +63,47 @@ const ProductCard = ({ product, backgroundColor }: ProductCardProps) => {
   const [imageError, setImageError] = useState(false);
   const { addToCart } = useCart();
   const { openCart } = useCartUI();
+  const [isDragging, setIsDragging] = useState(false);
+
+  const productLinkRef = useRef<HTMLAnchorElement>(null);
+
+  // Prevent clicks if we're in a dragging state
+  const handleLinkClick = (e: React.MouseEvent) => {
+    if (isDragging) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
+
+  useEffect(() => {
+    const swiper = document.querySelector('.swiper');
+    
+    const handleDragStart = () => {
+      setIsDragging(true);
+    };
+    
+    const handleDragEnd = () => {
+      // Use a timeout to ensure the drag state is maintained long enough
+      // to prevent accidental clicks right after releasing
+      setTimeout(() => {
+        setIsDragging(false);
+      }, 300);
+    };
+    
+    if (swiper) {
+      swiper.addEventListener('mousedown', handleDragStart);
+      swiper.addEventListener('touchstart', handleDragStart);
+      swiper.addEventListener('mouseup', handleDragEnd);
+      swiper.addEventListener('touchend', handleDragEnd);
+      
+      return () => {
+        swiper.removeEventListener('mousedown', handleDragStart);
+        swiper.removeEventListener('touchstart', handleDragStart);
+        swiper.removeEventListener('mouseup', handleDragEnd);
+        swiper.removeEventListener('touchend', handleDragEnd);
+      };
+    }
+  }, []);
 
   useEffect(() => {
     // Safe check for product variants
@@ -151,7 +192,12 @@ const ProductCard = ({ product, backgroundColor }: ProductCardProps) => {
           Best Seller
         </div>
       )}
-      <Link href={`/product/${product.handle}`} className="relative h-[280px] flex-grow mb-4 block">
+      <Link 
+        href={`/product/${product.handle}`} 
+        className="relative h-[280px] flex-grow mb-4 block"
+        onClick={handleLinkClick}
+        ref={productLinkRef}
+      >
         <Image
           src={imageSrc}
           alt={product.featuredImage?.altText || product.title}
@@ -248,9 +294,7 @@ const ShopByPlant = () => {
   const [hasMore, setHasMore] = useState(true);
   const [cursor, setCursor] = useState<string | null>(null);
   const loadMoreRef = useRef(null);
-  // Add state to track swiper initialization issues
-  const [swiperError, setSwiperError] = useState(false);
-  const [swiperInit, setSwiperInit] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   // Filter products based on active tab
   const filteredProducts = useMemo(() => {
@@ -378,6 +422,7 @@ const ShopByPlant = () => {
   useEffect(() => {
     try {
       fetchProducts();
+      setIsMounted(true);
     } catch (error) {
       console.error("Error in initial product fetch:", error);
       setError("Failed to load products. Please try again later.");
@@ -385,72 +430,12 @@ const ShopByPlant = () => {
     }
   }, [fetchProducts]);
 
-  // Setup intersection observer for infinite scrolling
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      entries => {
-        const [entry] = entries;
-        if (entry.isIntersecting && hasMore && !loadingMore && !loading) {
-          fetchProducts(cursor || undefined);
-        }
-      },
-      { threshold: 0.1 }
-    );
-    
-    const currentRef = loadMoreRef.current;
-    if (currentRef) {
-      observer.observe(currentRef);
-    }
-    
-    return () => {
-      if (currentRef) {
-        observer.unobserve(currentRef);
-      }
-    };
-  }, [cursor, hasMore, loadingMore, loading, fetchProducts]);
-
   const backgroundColors = [
     "bg-[#F2F7F2]", // Light mint green
     "bg-[#F7F2F2]", // Light pink
     "bg-[#F2F5F7]", // Light blue
     "bg-[#F7F7F2]"  // Light yellow
   ];
-
-  const handleSwiperError = () => {
-    setSwiperError(true);
-    console.error("Swiper initialization error");
-  };
-
-  const handleSwiperInit = (swiper: any) => {
-    setSwiperInit(true);
-    
-    // Ensure pagination updates when slides change
-    swiper.on('slideChange', function() {
-      try {
-        swiper.pagination.render();
-        swiper.pagination.update();
-      } catch (err) {
-        console.error("Error updating pagination:", err);
-      }
-    });
-    
-    // Bind touch events for better mobile support
-    swiper.on('touchStart', function() {
-      try {
-        document.body.style.overscrollBehavior = 'none';
-      } catch (err) {
-        console.error("Error in touchStart handler:", err);
-      }
-    });
-    
-    swiper.on('touchEnd', function() {
-      try {
-        document.body.style.overscrollBehavior = '';
-      } catch (err) {
-        console.error("Error in touchEnd handler:", err);
-      }
-    });
-  };
 
   return (
     <section className="py-16 bg-[#FDF6EF]">
@@ -495,47 +480,24 @@ const ShopByPlant = () => {
           </Link>
         </div>
 
-        {/* Product carousel with Swiper */}
         <div className="relative">
           {loading ? (
             <div className="w-full text-center py-12">Loading products...</div>
           ) : error ? (
             <div className="w-full text-center py-12 text-red-500">{error}</div>
-          ) : swiperError ? (
-            // Fallback to grid layout if Swiper fails
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredProducts.slice(0, 8).map((product, index) => (
-                <ProductWrapper
-                  key={product.id}
-                  product={product}
-                  backgroundColor={backgroundColors[index % backgroundColors.length]}
-                />
-              ))}
-            </div>
-          ) : filteredProducts && filteredProducts.length > 0 ? (
-            <div className="swiper-container">
+          ) : filteredProducts && filteredProducts.length > 0 && isMounted ? (
+            <div className="swiper-wrapper-custom">
               <Swiper
-                modules={[Navigation, Pagination, A11y, Virtual]}
+                modules={[Navigation, Pagination, A11y]}
                 spaceBetween={16}
                 slidesPerView={1}
-                virtual={{
-                  enabled: true,
-                  addSlidesAfter: 2,
-                  addSlidesBefore: 2
-                }}
                 navigation={{
-                  enabled: true,
-                  disabledClass: 'swiper-button-disabled',
                   nextEl: '.swiper-button-next',
                   prevEl: '.swiper-button-prev',
                 }}
                 pagination={{ 
-                  enabled: true,
-                  clickable: true,
                   el: '.swiper-pagination',
-                  renderBullet: function (index, className) {
-                    return '<span class="' + className + '" role="button" aria-label="Go to slide ' + (index + 1) + '"></span>';
-                  },
+                  clickable: true,
                 }}
                 breakpoints={{
                   640: {
@@ -552,26 +514,31 @@ const ShopByPlant = () => {
                   },
                 }}
                 className="mySwiper"
-                onError={handleSwiperError}
-                onInit={handleSwiperInit}
+                simulateTouch={true}
+                threshold={10}
+                preventClicks={true}
+                preventClicksPropagation={true}
+                grabCursor={true}
+                touchStartPreventDefault={true}
+                noSwipingClass="no-swiping"
                 watchSlidesProgress={true}
-                touchRatio={1.5}
-                touchReleaseOnEdges={true}
-                touchStartPreventDefault={false}
-                resistanceRatio={0.65}
+                shortSwipes={true}
+                longSwipesMs={100}
+                longSwipesRatio={0.1}
+                followFinger={true}
               >
                 {filteredProducts.map((product, index) => (
-                  <SwiperSlide key={product.id} virtualIndex={index}>
+                  <SwiperSlide key={product.id}>
                     <ProductWrapper
                       product={product}
                       backgroundColor={backgroundColors[index % backgroundColors.length]}
                     />
                   </SwiperSlide>
                 ))}
-                <div className="swiper-button-prev !text-gray-800 !w-10 !h-10 !bg-white/80 hover:!bg-white rounded-full shadow-lg !left-1 md:!left-0 after:!text-lg"></div>
-                <div className="swiper-button-next !text-gray-800 !w-10 !h-10 !bg-white/80 hover:!bg-white rounded-full shadow-lg !right-1 md:!right-0 after:!text-lg"></div>
               </Swiper>
-              <div className="swiper-pagination flex justify-center mt-6 gap-3"></div>
+              <div className="swiper-button-prev !text-gray-800 !w-10 !h-10 !bg-white/80 hover:!bg-white rounded-full shadow-lg !left-1 md:!left-2 after:!text-lg no-swiping"></div>
+              <div className="swiper-button-next !text-gray-800 !w-10 !h-10 !bg-white/80 hover:!bg-white rounded-full shadow-lg !right-1 md:!right-2 after:!text-lg no-swiping"></div>
+              <div className="swiper-pagination flex justify-center mt-6 gap-3 no-swiping"></div>
             </div>
           ) : (
             <div className="w-full text-center py-12">No products found for this category</div>
@@ -581,25 +548,39 @@ const ShopByPlant = () => {
       
       {/* Custom styles for Swiper */}
       <style jsx global>{`
-        .swiper-container {
+        .swiper-wrapper-custom {
           width: 100%;
           position: relative;
-          overflow: hidden;
-          touch-action: pan-y;
+          overflow: visible;
+          z-index: 1;
+        }
+        
+        .swiper {
+          margin: 0;
+          padding: 0 20px;
+          overflow: visible;
+          position: static;
         }
         
         .swiper-wrapper {
-          touch-action: pan-x;
+          display: flex;
+          height: auto;
         }
         
         .swiper-slide {
-          touch-action: pan-x;
-          height: auto !important;
+          height: auto;
+          width: auto;
+          flex-shrink: 0;
+          touch-action: none;
         }
         
-        .swiper-button-next:after, .swiper-button-prev:after {
-          font-size: 18px;
-          font-weight: bold;
+        .swiper-slide a {
+          pointer-events: auto;
+        }
+        
+        /* When dragging, temporarily disable pointer events on links */
+        .swiper-slide-active.swiper-slide-moving a {
+          pointer-events: none;
         }
         
         .swiper-button-next, .swiper-button-prev {
@@ -608,19 +589,29 @@ const ShopByPlant = () => {
           display: flex;
           align-items: center;
           justify-content: center;
-          background-color: rgba(255, 255, 255, 0.8);
+          background-color: rgba(255, 255, 255, 0.9);
           border-radius: 50%;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
           color: #333;
-          transition: background-color 0.3s ease;
+          transition: all 0.3s ease;
           z-index: 10;
+          pointer-events: auto !important;
+        }
+        
+        .swiper-button-next:after, .swiper-button-prev:after {
+          font-size: 18px;
+          font-weight: bold;
         }
         
         .swiper-button-next:hover, .swiper-button-prev:hover {
-          background-color: rgba(255, 255, 255, 1);
+          background-color: white;
+          transform: scale(1.05);
         }
         
         .swiper-button-disabled {
-          opacity: 0.5 !important;
+          opacity: 0.35 !important;
+          cursor: auto;
+          pointer-events: none;
         }
         
         .swiper-pagination {
@@ -631,6 +622,7 @@ const ShopByPlant = () => {
           display: flex;
           justify-content: center;
           gap: 6px;
+          pointer-events: auto !important;
         }
 
         .swiper-pagination-bullet {
@@ -642,6 +634,7 @@ const ShopByPlant = () => {
           margin: 0 6px;
           transition: all 0.3s ease;
           opacity: 1;
+          cursor: pointer;
         }
 
         .swiper-pagination-bullet-active {
@@ -650,11 +643,21 @@ const ShopByPlant = () => {
           border-radius: 10px;
         }
         
+        .no-swiping {
+          touch-action: auto !important;
+          pointer-events: auto !important;
+        }
+        
+        /* Handle touch gestures more consistently */
+        @media (pointer: coarse) {
+          .swiper {
+            touch-action: pan-y;
+          }
+        }
+        
         @media (max-width: 640px) {
           .swiper {
             padding: 0 15px;
-            overflow: hidden;
-            touch-action: pan-y;
           }
           
           .swiper-button-next, .swiper-button-prev {
@@ -664,27 +667,6 @@ const ShopByPlant = () => {
           
           .swiper-button-next:after, .swiper-button-prev:after {
             font-size: 16px;
-          }
-          
-          .swiper-slide {
-            height: auto;
-          }
-        }
-        
-        @supports (-webkit-touch-callout: none) {
-          /* Fix for iOS touch issues */
-          .swiper-container {
-            height: auto;
-            min-height: 460px;
-          }
-          
-          .swiper-wrapper {
-            height: auto;
-          }
-          
-          /* Additional iOS fixes */
-          html, body {
-            overscroll-behavior-y: none;
           }
         }
       `}</style>

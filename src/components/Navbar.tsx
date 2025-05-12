@@ -233,7 +233,7 @@ const Navbar = ({ onCartClick }: NavbarProps) => {
                     {/* Second grid - Additional Links */}
                     <div>
                       <div className="space-y-4">
-                        <Link href="/build-bundle" className="block text-gray-600 hover:text-gray-900 font-medium" onClick={handleLinkClick}>
+                        <Link href="/build-a-bundle" className="block text-gray-600 hover:text-gray-900 font-medium" onClick={handleLinkClick}>
                           BUILD A BUNDLE & SAVE $10
                         </Link>
                         <Link href="/ask" className="block text-gray-600 hover:text-gray-900 font-medium" onClick={handleLinkClick}>
@@ -250,7 +250,7 @@ const Navbar = ({ onCartClick }: NavbarProps) => {
 
                     {/* Third grid - Featured Links with Icons */}
                     <div className="grid grid-cols-2 gap-6">
-                      <Link href="/build-bundle" className="block" onClick={handleLinkClick}>
+                      <Link href="/build-a-bundle" className="block" onClick={handleLinkClick}>
                         <div className="bg-red-50 rounded-xl p-6 h-full flex flex-col items-center justify-center hover:bg-red-100 transition-colors">
                           <div className="mb-3">
                             {getBundleIcon()}
@@ -272,7 +272,7 @@ const Navbar = ({ onCartClick }: NavbarProps) => {
               </div>
             )}
           </div>
-          <Link href="/build-bundle" className="uppercase font-medium text-gray-800 hover:text-gray-600" onClick={handleLinkClick}>
+          <Link href="/build-a-bundle" className="uppercase font-medium text-gray-800 hover:text-gray-600" onClick={handleLinkClick}>
             Build a Bundle
           </Link>
           <Link href="/nutrients" className="uppercase font-medium text-gray-800 hover:text-gray-600">
@@ -400,7 +400,7 @@ const Navbar = ({ onCartClick }: NavbarProps) => {
 
               {/* Menu items */}
               <div className="space-y-6">
-                <Link href="/build-bundle" className="flex items-center space-x-4 py-4 border-b border-gray-200" onClick={handleLinkClick}>
+                <Link href="/build-a-bundle" className="flex items-center space-x-4 py-4 border-b border-gray-200" onClick={handleLinkClick}>
                   {getBundleIcon()}
                   <span className="text-gray-800 font-medium">BUILD A BUNDLE & SAVE $10</span>
                 </Link>

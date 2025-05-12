@@ -1,7 +1,7 @@
 import Hero from "@/components/Hero";
 import ShopByPlant from "@/components/ShopByPlant";
 import PlantCare from "@/components/PlantCare";
-import BuyThreePromo from '@/components/BuyThreePromo';
+import BundlePromo from '@/components/BundlePromo';
 import WhyTPS from '@/components/WhyTPS';
 import Reviews from '@/components/Reviews';
 
@@ -11,7 +11,7 @@ export default function Home() {
       <Hero />
       <ShopByPlant />
       <PlantCare />
-      <BuyThreePromo />
+      <BundlePromo />
       <WhyTPS />
       <Reviews />
     </main>

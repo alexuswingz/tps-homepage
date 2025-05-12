@@ -43,10 +43,17 @@ const NutrientsPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [usingFallbackData, setUsingFallbackData] = useState(false);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     if (file) {
+      // Check file size - limit to 5MB to avoid issues with API
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Image file is too large. Please select an image under 5MB.');
+        return;
+      }
+      
       setSelectedImage(file);
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -62,7 +69,8 @@ const NutrientsPage = () => {
       'image/*': ['.jpeg', '.jpg', '.png', '.webp']
     },
     maxFiles: 1,
-    multiple: false
+    multiple: false,
+    maxSize: 5 * 1024 * 1024 // 5MB max size
   });
 
   const clearImage = () => {
@@ -78,6 +86,7 @@ const NutrientsPage = () => {
     setError(null);
     setIdentifiedPlant(null);
     setRecommendedProducts([]);
+    setUsingFallbackData(false);
 
     try {
       console.log('Preparing to submit plant image for identification');
@@ -85,10 +94,16 @@ const NutrientsPage = () => {
       // Create FormData object
       const formData = new FormData();
       
-      // Add the image file
+      // Add the image file with explicit filename and type
       if (selectedImage) {
-        formData.append('image', selectedImage);
-        console.log('Image added to form data:', selectedImage.name, selectedImage.type, selectedImage.size);
+        // Ensure the file has a proper name and type for mobile browsers
+        const fileToUpload = new File(
+          [selectedImage], 
+          selectedImage.name || "plant-image.jpg",
+          { type: selectedImage.type || "image/jpeg" }
+        );
+        formData.append('image', fileToUpload);
+        console.log('Image added to form data:', fileToUpload.name, fileToUpload.type, fileToUpload.size);
       }
 
       // Send request to identify plant API
@@ -115,7 +130,8 @@ const NutrientsPage = () => {
         
         // Show fallback notice if applicable
         if (data.fallback) {
-          setError('Note: Using demo data. The plant identification service is currently unavailable.');
+          setUsingFallbackData(true);
+          console.log('Using fallback data:', data.error_info || 'Unknown reason');
         }
         
         setIdentifiedPlant(data.result);
@@ -218,6 +234,17 @@ const NutrientsPage = () => {
               </div>
             </div>
 
+            {/* Tips for Best Results */}
+            <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
+              <h3 className="font-medium text-blue-800 mb-2">Tips for Best Results:</h3>
+              <ul className="text-blue-700 text-sm space-y-2 list-disc pl-5">
+                <li>Use clear, well-lit images of your plant</li>
+                <li>Focus on distinctive features like leaves or flowers</li>
+                <li>Keep image files under 5MB in size</li>
+                <li>If using a mobile device, ensure your camera has permission to access the site</li>
+              </ul>
+            </div>
+
             {/* Submit Button */}
             <button
               type="submit"
@@ -254,7 +281,7 @@ const NutrientsPage = () => {
                 Please ensure your image clearly shows the plant, with good lighting and focus.
                 The plant identification service works best with close-up images of leaves or distinctive features.
               </p>
-              <div className="mt-4 flex justify-center">
+              <div className="mt-4 flex flex-col sm:flex-row gap-3 justify-center">
                 <button
                   onClick={() => {
                     clearImage();
@@ -263,6 +290,12 @@ const NutrientsPage = () => {
                   className="px-4 py-2 bg-gray-800 text-white rounded-xl hover:bg-gray-700 transition-colors duration-200"
                 >
                   Try Another Image
+                </button>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors duration-200"
+                >
+                  Refresh Page
                 </button>
               </div>
             </motion.div>
@@ -275,6 +308,13 @@ const NutrientsPage = () => {
               exit={{ opacity: 0, y: -20 }}
               className="space-y-8"
             >
+              {usingFallbackData && (
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-amber-800 text-sm">
+                  <p className="font-medium">Note: Using example plant data.</p>
+                  <p>Your image was received, but we're showing an example instead. This could be due to mobile browser limitations or service connectivity issues.</p>
+                </div>
+              )}
+              
               {/* Plant Information Card */}
               <div className="bg-white rounded-3xl shadow-lg p-6 sm:p-8">
                 <div className="flex flex-col md:flex-row gap-8">
@@ -286,16 +326,18 @@ const NutrientsPage = () => {
                           alt={identifiedPlant.name}
                           fill
                           className="object-cover"
+                          sizes="(max-width: 768px) 100vw, 33vw"
+                          priority
                         />
                       </div>
                     </div>
                   )}
                   <div className="w-full md:w-2/3 space-y-6">
                     <div>
-                      <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                      <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
                         {identifiedPlant.name}
                       </h2>
-                      <p className="text-gray-500 italic">
+                      <p className="text-gray-500 italic text-sm sm:text-base">
                         {identifiedPlant.details.scientific_name}
                       </p>
                     </div>
@@ -342,7 +384,7 @@ const NutrientsPage = () => {
                   <h3 className="text-2xl font-bold text-gray-900">
                     Recommended Products
                   </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                     {recommendedProducts.map((product) => (
                       <motion.div
                         key={product.id}
@@ -358,6 +400,8 @@ const NutrientsPage = () => {
                                 alt={product.name}
                                 fill
                                 className="object-cover"
+                                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                                loading="lazy"
                               />
                             ) : (
                               <div className="w-full h-full bg-gray-200 flex items-center justify-center">

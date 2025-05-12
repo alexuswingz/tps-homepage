@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { useCart } from '@/context/CartContext';
 import { useCartUI } from '@/app/template';
 import { shopifyFetch } from '@/lib/shopify';
 import { toast } from 'react-hot-toast';
+import '../styles/sticky.css';
+import Head from 'next/head';
 
 interface MoneyV2 {
   amount: string;
@@ -58,6 +60,8 @@ const BuildBundle = () => {
   const [selectedProducts, setSelectedProducts] = useState<SelectedProduct[]>([]);
   const { addToCart } = useCart();
   const { openCart } = useCartUI();
+  const [isMobile, setIsMobile] = useState(false);
+  const bundleRef = useRef(null);
 
   // Fetch products
   useEffect(() => {
@@ -370,117 +374,49 @@ const BuildBundle = () => {
     return product.variants.edges[0].node.quantityAvailable <= 0;
   };
 
+  // Handle responsive sticky positioning
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    
+    // Set initial value
+    handleResize();
+    
+    // Add event listener
+    window.addEventListener('resize', handleResize);
+    
+    // Clean up
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
   return (
-    <div className="bg-[#FDF6EF] min-h-screen py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Your Bundle</h1>
-          <p className="text-lg text-gray-600">Make a bundle of 3 or 5!</p>
-        </div>
-
+    <div className="bg-[#FDF6EF] min-h-screen">
+      <Head>
+        <style>{`
+          .sticky-bundle {
+            position: -webkit-sticky;
+            position: sticky !important;
+            top: 20px !important;
+            z-index: 100;
+          }
+          
+          @media (max-width: 1023px) {
+            .sticky-bundle {
+              position: relative !important;
+              top: 0 !important;
+            }
+          }
+        `}</style>
+      </Head>
+      
+      <div className="max-w-7xl mx-auto pb-16">
+        {/* Main content container */}
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Bundle summary - Moved to top for mobile */}
-          <div className="w-full lg:w-4/12 order-1 lg:order-2 h-fit lg:sticky lg:top-4 mb-8 lg:mb-0">
-            <div className="bg-[#F8F3E3] border border-[#D9D0BA] rounded-3xl p-6 shadow-sm">
-              <div className="text-center mb-6">
-                <h2 className="text-3xl font-bold text-[#4A3520] mb-1">Your Bundle</h2>
-                {totalProductCount() === 3 && (
-                  <div className="font-semibold text-lg">
-                    <span className="text-black mr-2">${calculateDiscountedPrice().toFixed(2)}</span>
-                    <span className="text-gray-500 line-through">${calculateTotalPrice().toFixed(2)}</span>
-                  </div>
-                )}
-              </div>
-              
-              <div className="space-y-5 mb-6">
-                {selectedProducts.map((selectedProduct, index) => (
-                  <div 
-                    key={index} 
-                    className="flex items-start border border-dashed border-[#83735A] p-3 rounded-md"
-                  >
-                    <div className="relative h-20 w-20 bg-white rounded-md mr-3 flex-shrink-0 p-1">
-                      <Image 
-                        src={selectedProduct.product.featuredImage?.url || '/placeholder-product.png'} 
-                        alt={selectedProduct.product.title}
-                        fill
-                        className="object-contain"
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-bold text-sm uppercase text-[#4A3520] leading-tight">
-                        {selectedProduct.product.title}
-                      </h3>
-                      <p className="text-xs text-gray-600 mb-1">Hydration - Immunity</p>
-                      <p className="font-semibold text-sm">${parseFloat(selectedProduct.variant.price.amount).toFixed(2)}</p>
-                      
-                      {/* Quantity control */}
-                      <div className="flex items-center mt-2">
-                        <button 
-                          onClick={() => handleUpdateQuantity(index, -1)}
-                          className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-300"
-                        >
-                          -
-                        </button>
-                        <span className="mx-2 text-sm font-medium">{selectedProduct.quantity}</span>
-                        <button 
-                          onClick={() => handleUpdateQuantity(index, 1)}
-                          className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-300"
-                          disabled={totalProductCount() >= 3 || selectedProduct.quantity >= selectedProduct.variant.quantityAvailable}
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
-                    <button 
-                      onClick={() => handleRemoveFromBundle(index)}
-                      className="text-gray-400 hover:text-red-500 ml-2"
-                      aria-label="Remove from bundle"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                ))}
-
-                {/* Show "Add product" message only if total is less than 3 */}
-                {totalProductCount() < 3 && (
-                  <div 
-                    className="flex items-center justify-center h-20 border border-dashed border-[#83735A] rounded-md bg-white/50 opacity-70"
-                  >
-                    <span className="text-gray-400 text-sm">
-                      Add {3 - totalProductCount()} more product{3 - totalProductCount() !== 1 ? 's' : ''}
-                    </span>
-                  </div>
-                )}
-              </div>
-              
-              <div className="rounded-full border border-[#D9D0BA] bg-white py-3 px-4 text-center mb-4">
-                <span className="font-semibold">{totalProductCount()}/3 TOTAL ITEMS</span>
-              </div>
-              
-              <button 
-                onClick={handleAddBundleToCart}
-                disabled={totalProductCount() !== 3}
-                className={`w-full py-3 rounded-full text-white font-semibold text-lg transition-colors mb-2 ${
-                  totalProductCount() === 3 
-                    ? 'bg-[#F33A6A] hover:bg-[#e02d5d]' 
-                    : 'bg-gray-400 cursor-not-allowed'
-                }`}
-              >
-                ADD TO BAG - ${totalProductCount() === 3 ? calculateDiscountedPrice().toFixed(2) : '0.00'} 
-                {totalProductCount() === 3 && <span className="line-through ml-1 text-gray-200 text-base">${calculateTotalPrice().toFixed(2)}</span>}
-              </button>
-              
-              {totalProductCount() === 3 && (
-                <p className="text-center text-[#4A3520] font-medium text-sm">WOOHOO! YOU'RE SAVING $10.</p>
-              )}
-            </div>
-          </div>
-
           {/* Products section */}
-          <div className="w-full lg:w-8/12 order-2 lg:order-1">
+          <div className="w-full lg:w-8/12 order-2 lg:order-1 min-h-[800px]">
             {/* Search and category filters */}
             <div className="mb-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
@@ -705,7 +641,6 @@ const BuildBundle = () => {
                               : isOutOfStock(product)
                               ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                               : 'bg-[#FF6B6B] text-white hover:bg-[#ff5252]'} transition-colors`}
-                          disabled={totalProductCount() >= 3 || selectedProducts.some(item => item.product.id === product.id) || isOutOfStock(product)}
                         >
                           {selectedProducts.some(item => item.product.id === product.id) 
                             ? 'ADDED TO BUNDLE' 
@@ -719,259 +654,107 @@ const BuildBundle = () => {
                 )}
               </div>
             </div>
-            
-            {/* Display other categories if viewing ALL category or searching */}
-            {(activeCategory === 'ALL' || searchQuery.trim()) && (
-              <>
-                {/* Display sections for each category */}
-                {['HOUSEPLANTS', 'GARDEN PLANTS', 'HYDRO & AQUATIC', 'SUPPLEMENT'].map(category => {
-                  // Skip the active category since we already displayed it above
-                  if (category === activeCategory && !searchQuery.trim()) return null;
-                  
-                  // Get products for this category
-                  let categoryProducts = products.filter(p => p.category === category);
-                  if (searchQuery.trim()) {
-                    const query = searchQuery.toLowerCase().trim();
-                    categoryProducts = categoryProducts.filter(p => 
-                      p.title.toLowerCase().includes(query)
-                    );
-                  }
-                  
-                  // Skip if no products
-                  if (categoryProducts.length === 0) return null;
-                  
-                  return (
-                    <div key={category} className="mb-12">
-                      <h2 className="text-xl font-bold mb-4 uppercase">{category.toLowerCase().replace('_', ' ')}</h2>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {categoryProducts.slice(0, 3).map((product) => (
-                          <div key={product.id} className="bg-white rounded-lg overflow-hidden">
-                            <div className="relative">
-                              <div className="bg-green-50 pt-4 px-4">
-                                <div className="relative h-40 w-full">
-                                  <Image 
-                                    src={product.featuredImage?.url || '/placeholder-product.png'} 
-                                    alt={product.title}
-                                    fill
-                                    className="object-contain"
-                                  />
-                                </div>
-                              </div>
-                              {product.isBestSeller && (
-                                <div className="absolute top-2 left-2 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold">
-                                  BEST SELLER!
-                                </div>
-                              )}
-                              {isOutOfStock(product) && (
-                                <div className="absolute top-2 right-2 bg-gray-700 text-white px-3 py-1 rounded-full text-xs font-bold">
-                                  OUT OF STOCK
-                                </div>
-                              )}
-                            </div>
-                            
-                            <div className="p-4">
-                              <div className="flex items-center mb-1">
-                                <div className="flex text-yellow-400">
-                                  {[...Array(5)].map((_, i) => (
-                                    <svg key={i} className="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20">
-                                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                    </svg>
-                                  ))}
-                                </div>
-                                <span className="ml-1 text-xs text-gray-500">{product.reviews} reviews</span>
-                              </div>
-                              
-                              <h3 className="font-bold uppercase mb-1">{product.title}</h3>
-                              
-                              <div className="flex items-center justify-between mb-3">
-                                <div className="flex items-center">
-                                  <span className="text-sm font-bold">8 Ounces</span>
-                                  <span className="mx-2 text-sm text-gray-600">|</span>
-                                  <span className="text-sm font-semibold">{formatPrice(product.variants.edges[0].node.price)}</span>
-                                </div>
-                                <button className="text-gray-500">
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                  </svg>
-                                </button>
-                              </div>
-                              
-                              <button 
-                                onClick={() => handleAddToBundle(product)}
-                                className={`w-full py-2 rounded-full text-sm uppercase font-medium 
-                                  ${selectedProducts.some(item => item.product.id === product.id) 
-                                    ? 'bg-green-500 text-white hover:bg-green-600' 
-                                    : isOutOfStock(product)
-                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                    : 'bg-[#FF6B6B] text-white hover:bg-[#ff5252]'} transition-colors`}
-                                disabled={totalProductCount() >= 3 || selectedProducts.some(item => item.product.id === product.id) || isOutOfStock(product)}
-                              >
-                                {selectedProducts.some(item => item.product.id === product.id) 
-                                  ? 'ADDED TO BUNDLE' 
-                                  : isOutOfStock(product)
-                                  ? 'OUT OF STOCK'
-                                  : 'ADD TO BUNDLE'}
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+          </div>
+
+          {/* Bundle summary - right panel */}
+          <div className="w-full lg:w-4/12 order-1 lg:order-2">
+            <div className="sticky-bundle">
+              <div className="bg-[#F8F3E3] border border-[#D9D0BA] rounded-3xl p-6 shadow-md overflow-auto max-h-[calc(100vh-100px)]">
+                <div className="text-center mb-6">
+                  <h2 className="text-3xl font-bold text-[#4A3520] mb-1">Your Bundle</h2>
+                  {totalProductCount() === 3 && (
+                    <div className="font-semibold text-lg">
+                      <span className="text-black mr-2">${calculateDiscountedPrice().toFixed(2)}</span>
+                      <span className="text-gray-500 line-through">${calculateTotalPrice().toFixed(2)}</span>
                     </div>
-                  );
-                })}
-              </>
-            )}
-            
-            {/* If not ALL or search, show a second section for dry climate plants or popular combinations */}
-            {!searchQuery.trim() && activeCategory !== 'ALL' && (
-              <div className="mb-12">
-                <h2 className="text-xl font-bold mb-4 uppercase">Popular Combinations</h2>
-                <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {!loading && !error && filteredProducts.slice(6, 12).map((product) => (
-                    <div key={product.id} className="bg-white rounded-lg overflow-hidden">
-                      <div className="relative">
-                        <div className="bg-green-50 pt-4 px-4">
-                          <div className="relative h-40 w-full">
-                            <Image 
-                              src={product.featuredImage?.url || '/placeholder-product.png'} 
-                              alt={product.title}
-                              fill
-                              className="object-contain"
-                            />
-                          </div>
-                        </div>
-                        {product.isBestSeller && (
-                          <div className="absolute top-2 left-2 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold">
-                            BEST SELLER!
-                          </div>
-                        )}
-                        {isOutOfStock(product) && (
-                          <div className="absolute top-2 right-2 bg-gray-700 text-white px-3 py-1 rounded-full text-xs font-bold">
-                            OUT OF STOCK
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className="p-4">
-                        <div className="flex items-center mb-1">
-                          <div className="flex text-yellow-400">
-                            {[...Array(5)].map((_, i) => (
-                              <svg key={i} className="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20">
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                              </svg>
-                            ))}
-                          </div>
-                          <span className="ml-1 text-xs text-gray-500">{product.reviews} reviews</span>
-                        </div>
-                        
-                        <h3 className="font-bold uppercase mb-1">{product.title}</h3>
-                        
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center">
-                            <span className="text-sm font-bold">8 Ounces</span>
-                            <span className="mx-2 text-sm text-gray-600">|</span>
-                            <span className="text-sm font-semibold">{formatPrice(product.variants.edges[0].node.price)}</span>
-                          </div>
-                        </div>
-                        
-                        <button 
-                          onClick={() => handleAddToBundle(product)}
-                          className={`w-full py-2 rounded-full text-sm uppercase font-medium 
-                            ${selectedProducts.some(item => item.product.id === product.id) 
-                              ? 'bg-green-500 text-white hover:bg-green-600' 
-                              : isOutOfStock(product)
-                              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                              : 'bg-[#FF6B6B] text-white hover:bg-[#ff5252]'} transition-colors`}
-                          disabled={totalProductCount() >= 3 || selectedProducts.some(item => item.product.id === product.id) || isOutOfStock(product)}
-                        >
-                          {selectedProducts.some(item => item.product.id === product.id) 
-                            ? 'ADDED TO BUNDLE' 
-                            : isOutOfStock(product)
-                            ? 'OUT OF STOCK'
-                            : 'ADD TO BUNDLE'}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                  )}
                 </div>
                 
-                {/* Mobile carousel view for Popular Combinations */}
-                <div className="block md:hidden relative">
-                  <div className="overflow-x-auto flex gap-4 pb-4 snap-x scrollbar-hide">
-                    {!loading && !error && filteredProducts.slice(6, 12).map((product) => (
-                      <div 
-                        key={product.id} 
-                        className="flex-shrink-0 w-[250px] snap-start bg-white rounded-lg overflow-hidden"
-                      >
-                        <div className="relative">
-                          <div className="bg-green-50 pt-4 px-4">
-                            <div className="relative h-40 w-full">
-                              <Image 
-                                src={product.featuredImage?.url || '/placeholder-product.png'} 
-                                alt={product.title}
-                                fill
-                                className="object-contain"
-                              />
-                            </div>
-                          </div>
-                          {product.isBestSeller && (
-                            <div className="absolute top-2 left-2 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold">
-                              BEST SELLER!
-                            </div>
-                          )}
-                          {isOutOfStock(product) && (
-                            <div className="absolute top-2 right-2 bg-gray-700 text-white px-3 py-1 rounded-full text-xs font-bold">
-                              OUT OF STOCK
-                            </div>
-                          )}
-                        </div>
+                <div className="space-y-5 mb-6 max-h-[calc(100vh-400px)] overflow-y-auto pr-1">
+                  {selectedProducts.map((selectedProduct, index) => (
+                    <div 
+                      key={index} 
+                      className="flex items-start border border-dashed border-[#83735A] p-3 rounded-md"
+                    >
+                      <div className="relative h-20 w-20 bg-white rounded-md mr-3 flex-shrink-0 p-1">
+                        <Image 
+                          src={selectedProduct.product.featuredImage?.url || '/placeholder-product.png'} 
+                          alt={selectedProduct.product.title}
+                          fill
+                          className="object-contain"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-bold text-sm uppercase text-[#4A3520] leading-tight">
+                          {selectedProduct.product.title}
+                        </h3>
+                        <p className="text-xs text-gray-600 mb-1">Hydration - Immunity</p>
+                        <p className="font-semibold text-sm">${parseFloat(selectedProduct.variant.price.amount).toFixed(2)}</p>
                         
-                        <div className="p-4">
-                          <div className="flex items-center mb-1">
-                            <div className="flex text-yellow-400">
-                              {[...Array(5)].map((_, i) => (
-                                <svg key={i} className="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20">
-                                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                </svg>
-                              ))}
-                            </div>
-                            <span className="ml-1 text-xs text-gray-500">{product.reviews} reviews</span>
-                          </div>
-                          
-                          <h3 className="font-bold uppercase mb-1">{product.title}</h3>
-                          
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center">
-                              <span className="text-sm font-bold">8 Ounces</span>
-                              <span className="mx-2 text-sm text-gray-600">|</span>
-                              <span className="text-sm font-semibold">{formatPrice(product.variants.edges[0].node.price)}</span>
-                            </div>
-                          </div>
-                          
+                        {/* Quantity control */}
+                        <div className="flex items-center mt-2">
                           <button 
-                            onClick={() => handleAddToBundle(product)}
-                            className={`w-full py-2 rounded-full text-sm uppercase font-medium 
-                              ${selectedProducts.some(item => item.product.id === product.id) 
-                                ? 'bg-green-500 text-white hover:bg-green-600' 
-                                : isOutOfStock(product)
-                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                : 'bg-[#FF6B6B] text-white hover:bg-[#ff5252]'} transition-colors`}
-                            disabled={totalProductCount() >= 3 || selectedProducts.some(item => item.product.id === product.id) || isOutOfStock(product)}
+                            onClick={() => handleUpdateQuantity(index, -1)}
+                            className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-300"
                           >
-                            {selectedProducts.some(item => item.product.id === product.id) 
-                              ? 'ADDED TO BUNDLE' 
-                              : isOutOfStock(product)
-                              ? 'OUT OF STOCK'
-                              : 'ADD TO BUNDLE'}
+                            -
+                          </button>
+                          <span className="mx-2 text-sm font-medium">{selectedProduct.quantity}</span>
+                          <button 
+                            onClick={() => handleUpdateQuantity(index, 1)}
+                            className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-300"
+                            disabled={totalProductCount() >= 3 || selectedProduct.quantity >= selectedProduct.variant.quantityAvailable}
+                          >
+                            +
                           </button>
                         </div>
                       </div>
-                    ))}
-                  </div>
+                      <button 
+                        onClick={() => handleRemoveFromBundle(index)}
+                        className="text-gray-400 hover:text-red-500 ml-2"
+                        aria-label="Remove from bundle"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+
+                  {/* Show "Add product" message only if total is less than 3 */}
+                  {totalProductCount() < 3 && (
+                    <div 
+                      className="flex items-center justify-center h-20 border border-dashed border-[#83735A] rounded-md bg-white/50 opacity-70"
+                    >
+                      <span className="text-gray-400 text-sm">
+                        Add {3 - totalProductCount()} more product{3 - totalProductCount() !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                  )}
                 </div>
+                
+                <div className="rounded-full border border-[#D9D0BA] bg-white py-3 px-4 text-center mb-4">
+                  <span className="font-semibold">{totalProductCount()}/3 TOTAL ITEMS</span>
+                </div>
+                
+                <button 
+                  onClick={handleAddBundleToCart}
+                  disabled={totalProductCount() !== 3}
+                  className={`w-full py-3 rounded-full text-white font-semibold text-lg transition-colors mb-2 ${
+                    totalProductCount() === 3 
+                      ? 'bg-[#F33A6A] hover:bg-[#e02d5d]' 
+                      : 'bg-gray-400 cursor-not-allowed'
+                  }`}
+                >
+                  ADD TO BAG - ${totalProductCount() === 3 ? calculateDiscountedPrice().toFixed(2) : '0.00'} 
+                  {totalProductCount() === 3 && <span className="line-through ml-1 text-gray-200 text-base">${calculateTotalPrice().toFixed(2)}</span>}
+                </button>
+                
+                {totalProductCount() === 3 && (
+                  <p className="text-center text-[#4A3520] font-medium text-sm">WOOHOO! YOU'RE SAVING $10.</p>
+                )}
               </div>
-            )}
-            
+            </div>
           </div>
         </div>
       </div>
@@ -979,4 +762,4 @@ const BuildBundle = () => {
   );
 };
 
-export default BuildBundle; 
+export default BuildBundle;
