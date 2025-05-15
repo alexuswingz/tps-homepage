@@ -309,6 +309,7 @@ export const getRecommendedAddons = async (limit = 4) => {
                     name
                     value
                   }
+                  quantityAvailable
                 }
               }
             }
@@ -345,7 +346,8 @@ export const getRecommendedAddons = async (limit = 4) => {
             amount: "19.99",
             currencyCode: "USD"
           },
-          selectedOptions: []
+          selectedOptions: [],
+          quantityAvailable: 0
         },
         variants: node.variants.edges.map((edge: any) => edge.node)
       }));
@@ -379,6 +381,7 @@ export const getRecommendedAddons = async (limit = 4) => {
                       name
                       value
                     }
+                    quantityAvailable
                   }
                 }
               }
@@ -414,7 +417,8 @@ export const getRecommendedAddons = async (limit = 4) => {
             amount: "19.99",
             currencyCode: "USD"
           },
-          selectedOptions: []
+          selectedOptions: [],
+          quantityAvailable: 0
         },
         variants: node.variants.edges.map((edge: any) => edge.node)
       }));
@@ -448,6 +452,7 @@ export const getRecommendedAddons = async (limit = 4) => {
                       name
                       value
                     }
+                    quantityAvailable
                   }
                 }
               }
@@ -483,7 +488,8 @@ export const getRecommendedAddons = async (limit = 4) => {
             amount: "19.99",
             currencyCode: "USD"
           },
-          selectedOptions: []
+          selectedOptions: [],
+          quantityAvailable: 0
         },
         variants: node.variants.edges.map((edge: any) => edge.node)
       }));

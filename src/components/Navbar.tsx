@@ -48,7 +48,7 @@ const Navbar = ({ onCartClick }: NavbarProps) => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 11.5a.5.5 0 111 0 .5.5 0 01-1 0zm7.5 0a7.5 7.5 0 11-15 0 7.5 7.5 0 0115 0zM12 2a3 3 0 013 3c0 1.6-1.4 2.5-3 2.5S9 6.6 9 5c0-1.65 1.35-3 3-3z" />
           </svg>
         );
-      case 'garden plants':
+      case 'lawn and garden':
         return (
           <svg className="w-10 h-10 p-2 bg-amber-100 rounded-lg text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-2.2 0-4 1.8-4 4 0 4 4 8 4 8s4-4 4-8c0-2.2-1.8-4-4-4zm-3.75-2.5c0 1.38 1.12 2.5 2.5 2.5.53 0 1.01-.16 1.42-.44M15.75 5.5c0 1.38-1.12 2.5-2.5 2.5-.53 0-1.01-.16-1.42-.44" />
@@ -209,8 +209,8 @@ const Navbar = ({ onCartClick }: NavbarProps) => {
                           <span className="font-medium">HOUSEPLANTS</span>
                         </Link>
                         <Link href="/shop?category=garden-plants" className="flex items-center space-x-3 text-gray-600 hover:text-gray-900" onClick={handleLinkClick}>
-                          {getCategoryIcon('garden plants')}
-                          <span className="font-medium">GARDEN PLANTS</span>
+                          {getCategoryIcon('lawn and garden')}
+                          <span className="font-medium">LAWN AND GARDEN</span>
                         </Link>
                         <Link href="/shop?category=hydro-aquatic" className="flex items-center space-x-3 text-gray-600 hover:text-gray-900" onClick={handleLinkClick}>
                           {getCategoryIcon('hydro & aquatic')}
@@ -218,7 +218,7 @@ const Navbar = ({ onCartClick }: NavbarProps) => {
                         </Link>
                         <Link href="/shop?category=plant-supplements" className="flex items-center space-x-3 text-gray-600 hover:text-gray-900" onClick={handleLinkClick}>
                           {getCategoryIcon('supplements')}
-                          <span className="font-medium">PLANT SUPPLEMENTS</span>
+                          <span className="font-medium">SPECIALTY SUPPLEMENTS</span>
                         </Link>
                         <Link 
                           href="/shop" 
@@ -416,8 +416,8 @@ const Navbar = ({ onCartClick }: NavbarProps) => {
                 </Link>
 
                 <Link href="/shop?category=garden-plants" className="flex items-center space-x-4 py-4 border-b border-gray-200" onClick={handleLinkClick}>
-                  {getCategoryIcon('garden plants')}
-                  <span className="text-gray-800 font-medium">GARDEN PLANTS</span>
+                  {getCategoryIcon('lawn and garden')}
+                  <span className="text-gray-800 font-medium">LAWN AND GARDEN</span>
                 </Link>
 
                 <Link href="/shop?category=hydro-aquatic" className="flex items-center space-x-4 py-4 border-b border-gray-200" onClick={handleLinkClick}>
@@ -427,7 +427,7 @@ const Navbar = ({ onCartClick }: NavbarProps) => {
 
                 <Link href="/shop?category=plant-supplements" className="flex items-center space-x-4 py-4 border-b border-gray-200" onClick={handleLinkClick}>
                   {getCategoryIcon('supplements')}
-                  <span className="text-gray-800 font-medium">PLANT SUPPLEMENTS</span>
+                  <span className="text-gray-800 font-medium">SPECIALTY SUPPLEMENTS</span>
                 </Link>
 
                 <Link href="/shop" className="w-full mt-6 mb-8" onClick={handleLinkClick}>

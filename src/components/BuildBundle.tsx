@@ -159,14 +159,14 @@ const BuildBundle = () => {
         } else if (title.includes('garden') || title.includes('tomato') || 
                   title.includes('flower') || title.includes('rose') ||
                   title.includes('vegetable') || title.includes('strawberry')) {
-          category = 'GARDEN PLANTS';
+          category = 'LAWN AND GARDEN';
         } else if (title.includes('hydro') || title.includes('aquatic') || 
                   title.includes('water') || title.includes('lotus')) {
           category = 'HYDRO & AQUATIC';
         } else if (title.includes('supplement') || title.includes('calcium') || 
                   title.includes('nutrient') || title.includes('magnesium') ||
                   title.includes('silica')) {
-          category = 'SUPPLEMENT';
+          category = 'SPECIALTY SUPPLEMENTS';
         }
         
         return { ...product, category };
@@ -429,10 +429,10 @@ const BuildBundle = () => {
                     HOUSEPLANTS
                   </button>
                   <button 
-                    className={`px-4 py-2 rounded-full text-sm ${activeCategory === 'GARDEN PLANTS' ? 'bg-[#8B7355] text-white' : 'bg-[#E8E0D4] text-[#8B7355]'}`}
-                    onClick={() => setActiveCategory('GARDEN PLANTS')}
+                    className={`px-4 py-2 rounded-full text-sm ${activeCategory === 'LAWN AND GARDEN' ? 'bg-[#8B7355] text-white' : 'bg-[#E8E0D4] text-[#8B7355]'}`}
+                    onClick={() => setActiveCategory('LAWN AND GARDEN')}
                   >
-                    GARDEN PLANTS
+                    LAWN AND GARDEN
                   </button>
                   <button 
                     className={`px-4 py-2 rounded-full text-sm ${activeCategory === 'HYDRO & AQUATIC' ? 'bg-[#8B7355] text-white' : 'bg-[#E8E0D4] text-[#8B7355]'}`}
@@ -441,10 +441,10 @@ const BuildBundle = () => {
                     HYDRO & AQUATIC
                   </button>
                   <button 
-                    className={`px-4 py-2 rounded-full text-sm ${activeCategory === 'SUPPLEMENT' ? 'bg-[#8B7355] text-white' : 'bg-[#E8E0D4] text-[#8B7355]'}`}
-                    onClick={() => setActiveCategory('SUPPLEMENT')}
+                    className={`px-4 py-2 rounded-full text-sm ${activeCategory === 'SPECIALTY SUPPLEMENTS' ? 'bg-[#8B7355] text-white' : 'bg-[#E8E0D4] text-[#8B7355]'}`}
+                    onClick={() => setActiveCategory('SPECIALTY SUPPLEMENTS')}
                   >
-                    SUPPLEMENT
+                    SPECIALTY SUPPLEMENTS
                   </button>
                 </div>
               </div>

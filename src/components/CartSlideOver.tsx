@@ -32,6 +32,7 @@ interface AddonProduct {
       name: string;
       value: string;
     }[];
+    quantityAvailable: number;
   };
   variants?: Array<{
     id: string;
@@ -44,6 +45,7 @@ interface AddonProduct {
       name: string;
       value: string;
     }[];
+    quantityAvailable: number;
   }>;
 }
 
@@ -181,12 +183,22 @@ export default function CartSlideOver({ isOpen, setIsOpen }: CartSlideOverProps)
   };
 
   const handleAddAddon = (addon: AddonProduct) => {
+    // Check if the selected variant has quantityAvailable
+    const selectedVariant = addon.variants?.find(v => v.title === selectedOptions[addon.id]) || addon.variant;
+    
+    // Don't add to cart if variant is out of stock
+    if (!selectedVariant || selectedVariant.quantityAvailable <= 0) {
+      // Could add toast notification here
+      console.error('Cannot add out of stock item to cart');
+      return;
+    }
+    
     addToCart({
-      variantId: addon.variant.id,
+      variantId: selectedVariant.id,
       productId: addon.id,
       title: addon.title,
-      variantTitle: addon.variant.title,
-      price: addon.variant.price,
+      variantTitle: selectedVariant.title,
+      price: selectedVariant.price,
       image: {
         url: addon.featuredImage.url,
         altText: addon.featuredImage.altText
@@ -357,9 +369,16 @@ export default function CartSlideOver({ isOpen, setIsOpen }: CartSlideOverProps)
                                   src={addon.featuredImage.url}
                                   alt={addon.featuredImage.altText}
                                   fill
-                                  className="object-cover object-center"
+                                  className={`object-cover object-center ${
+                                    (addon.variant.quantityAvailable <= 0) ? 'opacity-60 grayscale' : ''
+                                  }`}
                                   sizes="(max-width: 768px) 50vw, 33vw"
                                 />
+                                {(addon.variant.quantityAvailable <= 0) && (
+                                  <div className="absolute top-2 right-2 bg-gray-700 text-white px-2 py-1 rounded-full text-xs font-bold">
+                                    OUT OF STOCK
+                                  </div>
+                                )}
                               </div>
                               <div className="flex-1">
                                 <h3 className="text-sm font-medium text-gray-900 line-clamp-1">{addon.title}</h3>
@@ -375,8 +394,12 @@ export default function CartSlideOver({ isOpen, setIsOpen }: CartSlideOverProps)
                                       className="w-full rounded-md border-gray-300 py-1.5 text-xs focus:border-[#8B7355] focus:outline-none focus:ring-[#8B7355]"
                                     >
                                       {addon.variants.map((variant) => (
-                                        <option key={variant.id} value={variant.title}>
-                                          {variant.title}
+                                        <option 
+                                          key={variant.id} 
+                                          value={variant.title}
+                                          disabled={variant.quantityAvailable <= 0}
+                                        >
+                                          {variant.title}{variant.quantityAvailable <= 0 ? ' - Out of stock' : ''}
                                         </option>
                                       ))}
                                     </select>
@@ -386,13 +409,19 @@ export default function CartSlideOver({ isOpen, setIsOpen }: CartSlideOverProps)
                                   <button
                                     onClick={() => handleAddAddon(addon)}
                                     className={`w-full py-1.5 rounded-full text-xs font-medium ${
-                                      isItemInCart(addon.variant.id)
+                                      isItemInCart(addon.variant.id) 
                                         ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                        : addon.variant.quantityAvailable <= 0
+                                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                         : 'bg-[#FF6B6B] text-white hover:bg-[#ff5252]'
                                     }`}
-                                    disabled={isItemInCart(addon.variant.id)}
+                                    disabled={isItemInCart(addon.variant.id) || addon.variant.quantityAvailable <= 0}
                                   >
-                                    {isItemInCart(addon.variant.id) ? 'ADDED' : 'ADD TO BAG'}
+                                    {isItemInCart(addon.variant.id) 
+                                      ? 'ADDED' 
+                                      : addon.variant.quantityAvailable <= 0 
+                                      ? 'OUT OF STOCK' 
+                                      : 'ADD TO BAG'}
                                   </button>
                                 </div>
                               </div>

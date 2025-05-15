@@ -56,6 +56,61 @@ body {
   }
 }
 
+/* Divider animations */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 5px 1px rgba(255, 107, 107, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 15px 3px rgba(0, 201, 176, 0.5);
+  }
+}
+
+@keyframes float-dots {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes pulse-width {
+  0%, 100% {
+    opacity: 0.7;
+    transform: scaleX(0.97);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+.animate-float-dots {
+  animation: float-dots 3s ease-in-out infinite;
+}
+
+.animate-gradient-shift {
+  animation: gradient-shift 3s ease-in-out infinite;
+  background-size: 200% 200%;
+}
+
 .animate-marquee {
   animation: marquee 60s linear infinite;
 }

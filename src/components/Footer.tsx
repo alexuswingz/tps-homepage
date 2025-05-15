@@ -24,9 +24,9 @@ const Footer: React.FC = () => {
               <Link href="/shop" className="hover:underline">SHOP ALL</Link>
               <Link href="/bundles" className="hover:underline">BUILD A BUNDLE</Link>
               <Link href="/houseplants" className="hover:underline">HOUSEPLANTS</Link>
-              <Link href="/garden-plants" className="hover:underline">GARDEN PLANTS</Link>
+              <Link href="/garden-plants" className="hover:underline">LAWN AND GARDEN</Link>
               <Link href="/hydro-aquatic" className="hover:underline">HYDRO & AQUATIC</Link>
-              <Link href="/plant-supplements" className="hover:underline">PLANT SUPPLEMENTS</Link>
+              <Link href="/supplements" className="hover:underline">SPECIALTY SUPPLEMENTS</Link>
             </nav>
           </div>
 

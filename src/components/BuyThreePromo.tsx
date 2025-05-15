@@ -192,19 +192,19 @@ const BuyThreePromo = () => {
                 <div className="relative h-48 mb-4 bg-[#F1E8FA]">
                   <Image
                     src="/assets/propack.png"
-                    alt="Flower Garden Pro Pack"
+                    alt="Lawn & Garden Pro Pack"
                     fill
                     className="object-contain mix-blend-multiply"
                     sizes="(min-width: 1024px) 25vw, 100vw"
                   />
                 </div>
-                <h3 className="text-lg font-bold uppercase mb-1">FLOWER GARDEN</h3>
+                <h3 className="text-lg font-bold uppercase mb-1">LAWN & GARDEN</h3>
                 <h4 className="text-base font-medium uppercase mb-2">PRO PACK</h4>
                 <p className="text-sm text-gray-700 mb-4">
-                  Support blooms, strengthen stems, and enhance the vibrancy of your flowers.
+                  Support blooms, strengthen stems, and enhance the vibrancy of your lawn & garden plants.
                 </p>
                 <Link 
-                  href="/shop/flower-garden"
+                  href="/shop/lawn-garden"
                   className="inline-block bg-[#FF6B6B] text-white w-full py-3 rounded-full text-base font-medium hover:bg-opacity-90 transition-colors text-center"
                 >
                   SHOP - <span className="line-through">$45</span> $35

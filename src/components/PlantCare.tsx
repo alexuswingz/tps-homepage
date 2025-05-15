@@ -69,7 +69,7 @@ const PlantCare = () => {
                 href="/category/garden-plants/"
                 className="bg-[#8B7355] text-white px-6 sm:px-8 py-3 rounded-full text-base sm:text-lg font-medium hover:bg-[#7A6548] transition-colors w-full sm:w-auto text-center"
               >
-                SHOP GARDEN
+                SHOP LAWN & GARDEN
               </Link>
             </div>
           </div>

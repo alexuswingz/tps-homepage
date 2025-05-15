@@ -455,7 +455,7 @@ const ShopByPlant = () => {
             className={`${activeTab === 'garden-plants' ? 'bg-[#8B7355] text-white' : 'bg-[#E8E0D4] text-[#8B7355]'} px-6 py-2.5 rounded-full font-medium transition-colors hover:bg-[#8B7355] hover:text-white`}
             onClick={() => setActiveTab('garden-plants')}
           >
-            GARDEN PLANTS
+            LAWN AND GARDEN
           </Link>
           <Link 
             href="/category/hydro-aquatic"
@@ -469,7 +469,7 @@ const ShopByPlant = () => {
             className={`${activeTab === 'supplements' ? 'bg-[#8B7355] text-white' : 'bg-[#E8E0D4] text-[#8B7355]'} px-6 py-2.5 rounded-full font-medium transition-colors hover:bg-[#8B7355] hover:text-white`}
             onClick={() => setActiveTab('supplements')}
           >
-            SUPPLEMENTS
+            SPECIALTY SUPPLEMENTS
           </Link>
           <Link 
             href="/shop"
