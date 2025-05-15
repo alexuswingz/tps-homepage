@@ -7,7 +7,7 @@ import ScrollingDivider from "./ScrollingDivider";
 const Hero = () => {
   return (
     <>
-      <div className="bg-[#FDF6EF] w-full px-2 sm:px-6 py-4 sm:py-12">
+      <div className="bg-[#FDF6EF] w-full px-2 sm:px-6 py-4 sm:py-6 pb-0">
         <div className="max-w-[1400px] mx-auto">
           <div className="flex flex-col lg:flex-row rounded-3xl overflow-visible min-h-[500px] sm:min-h-[550px] lg:min-h-[600px] relative">
             {/* Left Section - 100% on mobile, 70% on desktop */}
@@ -26,7 +26,7 @@ const Hero = () => {
                   href="/build-a-bundle/"
                   className="bg-[#FF6B6B] text-white px-8 sm:px-10 lg:px-10 py-3.5 sm:py-4 rounded-full text-base sm:text-lg font-semibold inline-block hover:bg-[#ff5252] transition-all duration-300 uppercase tracking-wide shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                 >
-                  Build Your Bundle
+                  Shop Now
                 </Link>
               </div>
               <Image

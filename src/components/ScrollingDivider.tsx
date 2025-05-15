@@ -1,6 +1,10 @@
 "use client";
 
-const ScrollingDivider = () => {
+interface ScrollingDividerProps {
+  className?: string;
+}
+
+const ScrollingDivider = ({ className = "" }: ScrollingDividerProps) => {
   const items = [
     "SIMPLE FORMULAS",
     "1 MILLION GROWERS SERVED",
@@ -10,7 +14,7 @@ const ScrollingDivider = () => {
   ];
 
   return (
-    <div className="w-full bg-[#FDF6EF]">
+    <div className={`w-full bg-[#FDF6EF] ${className}`}>
       {/* First line - scrolling left */}
       <div className="border-y border-gray-200 overflow-hidden whitespace-nowrap py-2 sm:py-4">
         <div className="inline-flex animate-marquee" style={{ width: "200%", position: "relative" }}>
