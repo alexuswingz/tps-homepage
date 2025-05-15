@@ -156,7 +156,7 @@ const ProductCard = ({ product, backgroundColor }: ProductCardProps) => {
           <>
             <span className="font-black">{match[1].trim()}</span>
             {" | "}
-            <span className="font-medium text-base text-gray-700">{match[3]}</span>
+            <span className="font-medium text-[11px] sm:text-base text-gray-700">{match[3]}</span>
           </>
         );
       }
@@ -165,7 +165,7 @@ const ProductCard = ({ product, backgroundColor }: ProductCardProps) => {
       return (
         <>
           <span className="font-black">{first}</span>
-          {rest.length ? <span className="font-medium text-base text-gray-700">{' ' + rest.join(' ')}</span> : ''}
+          {rest.length ? <span className="font-medium text-[11px] sm:text-base text-gray-700">{' ' + rest.join(' ')}</span> : ''}
         </>
       );
     } catch (e) {
@@ -186,15 +186,15 @@ const ProductCard = ({ product, backgroundColor }: ProductCardProps) => {
     : product.featuredImage.url;
 
   return (
-    <div className={`rounded-3xl p-5 ${backgroundColor} transition-transform hover:scale-[1.02] flex flex-col h-full relative shadow-sm`}>
+    <div className={`rounded-2xl sm:rounded-3xl p-3 sm:p-5 ${backgroundColor} transition-transform hover:scale-[1.02] flex flex-col h-full relative shadow-sm`}>
       {product.isBestSeller && (
-        <div className="absolute top-4 right-4 bg-[#FF6B6B] text-white px-3 py-1 rounded-full text-xs font-semibold z-10">
+        <div className="absolute top-2 sm:top-4 right-2 sm:right-4 bg-[#FF6B6B] text-white px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-semibold z-10">
           Best Seller
         </div>
       )}
       <Link 
         href={`/product/${product.handle}`} 
-        className="relative h-[280px] flex-grow mb-4 block"
+        className="relative h-[140px] sm:h-[280px] flex-grow mb-2 sm:mb-4 block"
         onClick={handleLinkClick}
         ref={productLinkRef}
       >
@@ -203,31 +203,30 @@ const ProductCard = ({ product, backgroundColor }: ProductCardProps) => {
           alt={product.featuredImage?.altText || product.title}
           fill
           className="object-contain mix-blend-multiply"
-          sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
+          sizes="(max-width: 640px) 140px, (max-width: 768px) 280px, 300px"
           priority
           onError={() => setImageError(true)}
         />
       </Link>
-      <div className="flex flex-col justify-end space-y-2">
-        <div className="flex items-center mb-1">
+      <div className="flex flex-col justify-end space-y-1.5 sm:space-y-2">
+        <div className="flex items-center mb-0.5 sm:mb-1">
           <div className="flex">
             {[...Array(5)].map((_, i) => (
-              <svg key={i} className="w-3.5 h-3.5 text-[#FF6B6B] fill-current" viewBox="0 0 20 20">
+              <svg key={i} className="w-2.5 sm:w-3.5 h-2.5 sm:h-3.5 text-[#FF6B6B] fill-current" viewBox="0 0 20 20">
                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
               </svg>
             ))}
           </div>
-          <span className="ml-2 text-xs text-gray-600">{product.reviews || 0} reviews</span>
+          <span className="ml-1 text-[10px] sm:text-xs text-gray-600">{product.reviews || 0} reviews</span>
         </div>
         <h3 
-          className="text-lg font-bold text-gray-900 mb-3 line-clamp-2 leading-tight"
+          className="text-sm sm:text-lg font-bold text-gray-900 mb-1.5 sm:mb-3 line-clamp-2 leading-tight"
           style={{
             display: '-webkit-box',
             WebkitLineClamp: 2,
             WebkitBoxOrient: 'vertical',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
-            minHeight: '48px',
           }}
         >
           {formatProductTitle(product.title)}
@@ -236,7 +235,7 @@ const ProductCard = ({ product, backgroundColor }: ProductCardProps) => {
         <div className="flex items-center w-full gap-0 mt-auto">
           <div className="w-[50%] relative">
             <select 
-              className="w-full appearance-none bg-white rounded-l-full pl-3 pr-8 py-2.5 border border-r-0 border-gray-200 text-sm focus:outline-none focus:border-[#FF6B6B]"
+              className="w-full appearance-none bg-white rounded-l-full pl-2 sm:pl-3 pr-6 sm:pr-8 py-1.5 sm:py-2.5 border border-r-0 border-gray-200 text-[11px] sm:text-sm focus:outline-none focus:border-[#FF6B6B]"
               value={selectedVariant.id}
               onChange={(e) => {
                 const variant = product.variants.edges.find(v => v.node.id === e.target.value)?.node;
@@ -249,24 +248,24 @@ const ProductCard = ({ product, backgroundColor }: ProductCardProps) => {
                 </option>
               ))}
             </select>
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-              <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="absolute right-1.5 sm:right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+              <svg className="h-2.5 w-2.5 sm:h-4 sm:w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </div>
           </div>
-          <div className="w-[25%] bg-white border-y border-gray-200 flex items-center justify-center py-2.5">
-            <span className="text-sm font-medium text-gray-900">
+          <div className="w-[25%] bg-white border-y border-gray-200 flex items-center justify-center py-1.5 sm:py-2.5">
+            <span className="text-[11px] sm:text-sm font-medium text-gray-900">
               {formatPrice(selectedVariant.price)}
             </span>
           </div>
           <button 
-            className="w-[25%] bg-[#FF6B6B] py-2.5 rounded-r-full hover:bg-[#ff5252] transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-[25%] bg-[#FF6B6B] py-1.5 sm:py-2.5 rounded-r-full hover:bg-[#ff5252] transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={!selectedVariant || selectedVariant.quantityAvailable < 1}
             onClick={handleAddToCart}
             aria-label="Add to cart"
           >
-            <ShoppingCartIcon className="w-5 h-5 text-white" strokeWidth={2} />
+            <ShoppingCartIcon className="w-3 h-3 sm:w-5 sm:h-5 text-white" strokeWidth={2} />
           </button>
         </div>
       </div>
@@ -296,6 +295,31 @@ const ShopByPlant = () => {
   const loadMoreRef = useRef(null);
   const [isMounted, setIsMounted] = useState(false);
   const [fadeIn, setFadeIn] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+  const [showAll, setShowAll] = useState(false);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+  // Add resize listener to detect mobile screens
+  useEffect(() => {
+    const checkIfMobile = () => {
+      const mobile = window.innerWidth < 640;
+      setIsMobile(mobile);
+      // Reset showAll when switching between mobile and desktop
+      if (!mobile) {
+        setShowAll(false);
+        setIsFilterOpen(false);
+      }
+    };
+    
+    // Check on mount
+    checkIfMobile();
+    
+    // Add event listener
+    window.addEventListener('resize', checkIfMobile);
+    
+    // Cleanup
+    return () => window.removeEventListener('resize', checkIfMobile);
+  }, []);
 
   const fetchProducts = useCallback(async (after?: string) => {
     try {
@@ -700,6 +724,9 @@ const ShopByPlant = () => {
         setFadeIn(true);
       }, 50);
     }, 300);
+
+    // Close filter dropdown if open
+    setIsFilterOpen(false);
   };
 
   // Update useEffect to refetch when activeTab changes
@@ -724,12 +751,198 @@ const ShopByPlant = () => {
     "bg-[#F7F7F2]"  // Light yellow
   ];
 
+  // Render mobile grid view
+  const renderMobileGrid = () => {
+    const displayedProducts = showAll ? products : products.slice(0, 5);
+    
+    return (
+      <div className="space-y-6">
+        <div className={`grid grid-cols-2 gap-3 transition-opacity duration-300 ease-in-out ${fadeIn ? 'opacity-100' : 'opacity-0'}`}>
+          {displayedProducts.map((product, index) => (
+            <div key={product.id} className="w-full">
+              <ProductWrapper
+                product={product}
+                backgroundColor={backgroundColors[index % backgroundColors.length]}
+              />
+            </div>
+          ))}
+        </div>
+        
+        {!showAll && products.length > 5 && (
+          <div className="flex justify-center mt-6">
+            <Link 
+              href={`/shop/${activeTab !== 'all' ? activeTab : ''}`}
+              className="bg-[#FF6B6B] text-white px-6 py-2.5 rounded-full text-sm font-medium hover:bg-[#ff5252] transition-colors inline-flex items-center space-x-2"
+            >
+              <span>SEE ALL {getCategoryDisplayName()}</span>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </Link>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Render desktop slider
+  const renderDesktopSlider = () => {
+    return (
+      <div className={`swiper-wrapper-custom transition-opacity duration-300 ease-in-out ${fadeIn ? 'opacity-100' : 'opacity-0'}`}>
+        <Swiper
+          modules={[Navigation, Pagination, A11y]}
+          spaceBetween={16}
+          slidesPerView={1}
+          navigation={{
+            nextEl: '.swiper-button-next',
+            prevEl: '.swiper-button-prev',
+          }}
+          pagination={{ 
+            el: '.swiper-pagination',
+            clickable: true,
+          }}
+          breakpoints={{
+            640: {
+              slidesPerView: 2,
+              spaceBetween: 20,
+            },
+            768: {
+              slidesPerView: 3,
+              spaceBetween: 24,
+            },
+            1024: {
+              slidesPerView: 4,
+              spaceBetween: 24,
+            },
+          }}
+          className="mySwiper"
+          simulateTouch={true}
+          threshold={10}
+          preventClicks={true}
+          preventClicksPropagation={true}
+          grabCursor={true}
+          touchStartPreventDefault={true}
+          noSwipingClass="no-swiping"
+          watchSlidesProgress={true}
+          shortSwipes={true}
+          longSwipesMs={100}
+          longSwipesRatio={0.1}
+          followFinger={true}
+        >
+          {products.map((product, index) => (
+            <SwiperSlide key={product.id}>
+              <ProductWrapper
+                product={product}
+                backgroundColor={backgroundColors[index % backgroundColors.length]}
+              />
+            </SwiperSlide>
+          ))}
+        </Swiper>
+        <div className="swiper-button-prev !text-gray-800 !w-10 !h-10 !bg-white/80 hover:!bg-white rounded-full shadow-lg !left-1 md:!left-2 after:!text-lg no-swiping"></div>
+        <div className="swiper-button-next !text-gray-800 !w-10 !h-10 !bg-white/80 hover:!bg-white rounded-full shadow-lg !right-1 md:!right-2 after:!text-lg no-swiping"></div>
+        <div className="swiper-pagination flex justify-center mt-6 gap-3 no-swiping"></div>
+      </div>
+    );
+  };
+
+  // Function to get category name for display
+  const getCategoryDisplayName = () => {
+    switch(activeTab) {
+      case 'houseplants': return 'HOUSEPLANTS';
+      case 'garden-plants': return 'GARDEN PLANTS';
+      case 'hydro-aquatic': return 'HYDRO & AQUATIC PLANTS';
+      case 'supplements': return 'SUPPLEMENTS';
+      default: return 'GARDEN PLANTS';
+    }
+  };
+
+  // Get the display name for the current category
+  const getSelectedLabel = () => {
+    switch(activeTab) {
+      case 'houseplants': return 'HOUSEPLANTS';
+      case 'garden-plants': return 'LAWN AND GARDEN';
+      case 'hydro-aquatic': return 'HYDRO & AQUATIC';
+      case 'supplements': return 'SPECIALTY SUPPLEMENTS';
+      default: return 'SHOP ALL';
+    }
+  };
+
   return (
     <section className="py-16 bg-[#FDF6EF]">
       <div className="container mx-auto px-4">
-        <h2 className="text-4xl font-bold text-center mb-12">Shop By Plant</h2>
+        <h2 className="text-4xl font-bold text-center mb-8">Shop By Plant</h2>
         
-        <div className="mb-8 flex flex-wrap justify-center gap-3">
+        {/* Mobile Dropdown Filter */}
+        <div className="block sm:hidden mb-8">
+          <button
+            onClick={() => setIsFilterOpen(!isFilterOpen)}
+            className="w-full bg-[#E8E0D4] text-[#8B7355] px-6 py-3 rounded-full font-medium text-base flex items-center justify-between"
+          >
+            <span>{getSelectedLabel()}</span>
+            <svg 
+              className={`w-5 h-5 transition-transform ${isFilterOpen ? 'rotate-180' : ''}`} 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          
+          {isFilterOpen && (
+            <div className="absolute left-4 right-4 mt-2 bg-white rounded-2xl shadow-lg overflow-hidden z-20">
+              <button
+                onClick={() => handleTabChange('houseplants')}
+                className={`w-full px-6 py-3 text-left transition-colors ${
+                  activeTab === 'houseplants'
+                    ? 'bg-[#8B7355] text-white'
+                    : 'text-[#8B7355] hover:bg-[#E8E0D4]'
+                }`}
+              >
+                HOUSEPLANTS
+              </button>
+              <button
+                onClick={() => handleTabChange('garden-plants')}
+                className={`w-full px-6 py-3 text-left transition-colors ${
+                  activeTab === 'garden-plants'
+                    ? 'bg-[#8B7355] text-white'
+                    : 'text-[#8B7355] hover:bg-[#E8E0D4]'
+                }`}
+              >
+                LAWN AND GARDEN
+              </button>
+              <button
+                onClick={() => handleTabChange('hydro-aquatic')}
+                className={`w-full px-6 py-3 text-left transition-colors ${
+                  activeTab === 'hydro-aquatic'
+                    ? 'bg-[#8B7355] text-white'
+                    : 'text-[#8B7355] hover:bg-[#E8E0D4]'
+                }`}
+              >
+                HYDRO & AQUATIC
+              </button>
+              <button
+                onClick={() => handleTabChange('supplements')}
+                className={`w-full px-6 py-3 text-left transition-colors ${
+                  activeTab === 'supplements'
+                    ? 'bg-[#8B7355] text-white'
+                    : 'text-[#8B7355] hover:bg-[#E8E0D4]'
+                }`}
+              >
+                SPECIALTY SUPPLEMENTS
+              </button>
+              <button 
+                onClick={() => handleTabChange('all')}
+                className="w-full px-6 py-3 text-left bg-[#FF6B6B] text-white hover:bg-[#ff5252] transition-colors"
+              >
+                SHOP ALL
+              </button>
+            </div>
+          )}
+        </div>
+        
+        {/* Desktop Filter Buttons */}
+        <div className="hidden sm:flex sm:flex-wrap sm:justify-center sm:gap-3 mb-8">
           <button 
             className={`${activeTab === 'houseplants' ? 'bg-[#8B7355] text-white' : 'bg-[#E8E0D4] text-[#8B7355]'} px-6 py-2.5 rounded-full font-medium transition-colors hover:bg-[#8B7355] hover:text-white`}
             onClick={(e) => {
@@ -783,62 +996,7 @@ const ShopByPlant = () => {
           ) : error ? (
             <div className="w-full text-center py-12 text-red-500">{error}</div>
           ) : products && products.length > 0 && isMounted ? (
-            <div 
-              className={`swiper-wrapper-custom transition-opacity duration-300 ease-in-out ${fadeIn ? 'opacity-100' : 'opacity-0'}`}
-            >
-              <Swiper
-                modules={[Navigation, Pagination, A11y]}
-                spaceBetween={16}
-                slidesPerView={1}
-                navigation={{
-                  nextEl: '.swiper-button-next',
-                  prevEl: '.swiper-button-prev',
-                }}
-                pagination={{ 
-                  el: '.swiper-pagination',
-                  clickable: true,
-                }}
-                breakpoints={{
-                  640: {
-                    slidesPerView: 2,
-                    spaceBetween: 20,
-                  },
-                  768: {
-                    slidesPerView: 3,
-                    spaceBetween: 24,
-                  },
-                  1024: {
-                    slidesPerView: 4,
-                    spaceBetween: 24,
-                  },
-                }}
-                className="mySwiper"
-                simulateTouch={true}
-                threshold={10}
-                preventClicks={true}
-                preventClicksPropagation={true}
-                grabCursor={true}
-                touchStartPreventDefault={true}
-                noSwipingClass="no-swiping"
-                watchSlidesProgress={true}
-                shortSwipes={true}
-                longSwipesMs={100}
-                longSwipesRatio={0.1}
-                followFinger={true}
-              >
-                {products.map((product, index) => (
-                  <SwiperSlide key={product.id}>
-                    <ProductWrapper
-                      product={product}
-                      backgroundColor={backgroundColors[index % backgroundColors.length]}
-                    />
-                  </SwiperSlide>
-                ))}
-              </Swiper>
-              <div className="swiper-button-prev !text-gray-800 !w-10 !h-10 !bg-white/80 hover:!bg-white rounded-full shadow-lg !left-1 md:!left-2 after:!text-lg no-swiping"></div>
-              <div className="swiper-button-next !text-gray-800 !w-10 !h-10 !bg-white/80 hover:!bg-white rounded-full shadow-lg !right-1 md:!right-2 after:!text-lg no-swiping"></div>
-              <div className="swiper-pagination flex justify-center mt-6 gap-3 no-swiping"></div>
-            </div>
+            isMobile ? renderMobileGrid() : renderDesktopSlider()
           ) : (
             <div className="w-full text-center py-12">No products found for this category</div>
           )}
