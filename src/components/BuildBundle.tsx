@@ -194,7 +194,23 @@ const BuildBundle = () => {
       filtered = filtered.filter(product => 
         product.title.toLowerCase().includes(query)
       );
+    } 
+    // If no search query, hide out of stock products
+    else {
+      filtered = filtered.filter(product => 
+        product.variants.edges.some(edge => edge.node.quantityAvailable > 0)
+      );
     }
+
+    // Sort by popularity - using bestSeller status and reviews as proxies for popularity
+    filtered.sort((a, b) => {
+      // First check for bestSeller flag
+      if (a.isBestSeller && !b.isBestSeller) return -1;
+      if (!a.isBestSeller && b.isBestSeller) return 1;
+      
+      // Then sort by reviews count as a secondary criteria
+      return (b.reviews || 0) - (a.reviews || 0);
+    });
     
     setFilteredProducts(filtered);
   }, [activeCategory, searchQuery, products]);

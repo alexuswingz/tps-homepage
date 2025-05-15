@@ -306,7 +306,7 @@ const Navbar = ({ onCartClick }: NavbarProps) => {
             Build a Bundle
           </Link>
           <Link href="/nutrients" className="uppercase font-medium text-black hover:text-gray-600">
-            Find Your Nutrients
+          The Plant Spotter
           </Link>
         </div>
 
@@ -442,7 +442,7 @@ const Navbar = ({ onCartClick }: NavbarProps) => {
 
                 <Link href="/nutrients" className="flex items-center space-x-4 py-4 border-b border-gray-200 transition-all duration-300 hover:pl-2 hover:border-teal-300" onClick={handleLinkClick}>
                   {getNutrientsIcon()}
-                  <span className="text-gray-800 font-medium">FIND YOUR NUTRIENTS</span>
+                  <span className="text-gray-800 font-medium">The Plant Spotter</span>
                 </Link>
 
                 <Link href="/shop?category=houseplants" className="flex items-center space-x-4 py-4 border-b border-gray-200 transition-all duration-300 hover:pl-2 hover:border-green-300" onClick={handleLinkClick}>

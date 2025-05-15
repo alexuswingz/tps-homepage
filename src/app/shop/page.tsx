@@ -241,9 +241,9 @@ const CategoryFilter = ({ selectedCategory, onCategoryChange, searchQuery, onSea
 
   const categories = [
     { id: 'houseplants', label: 'HOUSEPLANTS' },
-    { id: 'garden-plants', label: 'LAWN AND GARDEN' },
+    { id: 'garden-plants', label: 'GARDEN PLANTS' },
     { id: 'hydro-aquatic', label: 'HYDRO & AQUATIC' },
-    { id: 'supplements', label: 'SPECIALTY SUPPLEMENTS' },
+    { id: 'supplements', label: 'SUPPLEMENTS' },
   ];
 
   const handleCategoryClick = (categoryId: string) => {
@@ -419,7 +419,7 @@ const ProductCard = ({ product }: { product: Product }) => {
   };
 
   return (
-    <div className={`rounded-2xl sm:rounded-3xl p-3 sm:p-5 bg-[#F2F7F2] transition-transform hover:scale-[1.02] flex flex-col h-full relative shadow-sm ${isOutOfStock ? 'opacity-70' : ''}`}>
+    <div className={`rounded-2xl sm:rounded-3xl p-3 sm:p-5 bg-[#F2F7F2] transition-transform hover:scale-[1.02] flex flex-col h-full relative shadow-sm ${isOutOfStock ? 'opacity-75' : ''}`}>
       {product.isBestSeller && (
         <div className="absolute top-2 sm:top-4 right-2 sm:right-4 bg-[#FF6B6B] text-white px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-semibold z-10">
           Best Seller
@@ -444,7 +444,7 @@ const ProductCard = ({ product }: { product: Product }) => {
         <div className="flex items-center mb-0.5 sm:mb-1">
           <div className="flex">
             {[...Array(5)].map((_, i) => (
-              <svg key={i} className={`w-2.5 sm:w-3.5 h-2.5 sm:h-3.5 ${isOutOfStock ? 'text-gray-400' : 'text-[#FF6B6B]'} fill-current`} viewBox="0 0 20 20">
+              <svg key={i} className="w-2.5 sm:w-3.5 h-2.5 sm:h-3.5 text-[#FF6B6B] fill-current" viewBox="0 0 20 20">
                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
               </svg>
             ))}
@@ -467,7 +467,7 @@ const ProductCard = ({ product }: { product: Product }) => {
         <div className="flex items-center w-full gap-0 mt-auto">
           <div className="w-[50%] relative">
             <select 
-              className={`w-full appearance-none bg-white rounded-l-full pl-2 sm:pl-3 pr-6 sm:pr-8 py-1.5 sm:py-2.5 border border-r-0 border-gray-200 text-[11px] sm:text-sm focus:outline-none ${isOutOfStock ? 'text-gray-400' : 'focus:border-[#FF6B6B]'}`}
+              className="w-full appearance-none bg-white rounded-l-full pl-2 sm:pl-3 pr-6 sm:pr-8 py-1.5 sm:py-2.5 border border-r-0 border-gray-200 text-[11px] sm:text-sm focus:outline-none focus:border-[#FF6B6B]"
               value={selectedVariant.id}
               onChange={(e) => {
                 const variant = product.variants.edges.find(v => v.node.id === e.target.value)?.node;
@@ -487,13 +487,17 @@ const ProductCard = ({ product }: { product: Product }) => {
             </div>
           </div>
           <div className="w-[25%] bg-white border-y border-gray-200 flex items-center justify-center py-1.5 sm:py-2.5">
-            <span className={`text-[11px] sm:text-sm font-medium ${isOutOfStock ? 'text-gray-400' : 'text-gray-900'}`}>
+            <span className="text-[11px] sm:text-sm font-medium text-gray-900">
               {formatPrice(selectedVariant.price)}
             </span>
           </div>
           <button 
-            className={`w-[25%] py-1.5 sm:py-2.5 rounded-r-full flex items-center justify-center ${isOutOfStock ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#FF6B6B] hover:bg-[#ff5252] transition-colors'}`}
-            disabled={isOutOfStock || selectedVariant.quantityAvailable <= 0}
+            className={`w-[25%] py-1.5 sm:py-2.5 rounded-r-full flex items-center justify-center ${
+              isOutOfStock 
+              ? 'bg-gray-400 cursor-not-allowed' 
+              : 'bg-[#FF6B6B] hover:bg-[#ff5252] transition-colors'
+            }`}
+            disabled={isOutOfStock}
             onClick={handleAddToCart}
             aria-label={isOutOfStock ? "Out of stock" : "Add to cart"}
           >
@@ -552,11 +556,11 @@ const ProductSection = ({ title, products, id }: { title: string; products: Prod
     switch (title.toLowerCase()) {
       case 'houseplants':
         return '/assets/categories/houseplants.jpg';
-      case 'lawn and garden':
+      case 'garden plants':
         return '/assets/categories/garden.jpg';
       case 'hydro & aquatic':
         return '/assets/categories/hydro.jpg';
-      case 'specialty supplements':
+      case 'supplements':
         return '/assets/categories/supplements.jpg';
       default:
         return '/assets/categories/default.jpg';
@@ -775,10 +779,10 @@ function ShopPageContent() {
       );
     }
 
-    // Apply search filter if query exists
+    // Apply search filter
     if (query.trim()) {
       const searchTerms = query.toLowerCase().split(' ');
-      filtered = products.filter(product => 
+      filtered = filtered.filter(product => 
         searchTerms.every(term => 
           product.title.toLowerCase().includes(term) ||
           product.variants.edges.some(edge => 
@@ -786,7 +790,7 @@ function ShopPageContent() {
           )
         )
       );
-    } 
+    }
     // If no search query, hide out of stock products
     else {
       filtered = filtered.filter(product => 
@@ -796,9 +800,8 @@ function ShopPageContent() {
 
     // Sort by popularity (descending)
     filtered.sort((a, b) => {
-      // Use the popularityScore property if available, otherwise use reviews count
-      const scoreA = a.popularityScore !== undefined ? a.popularityScore : (a.reviews || 0)/1000;
-      const scoreB = b.popularityScore !== undefined ? b.popularityScore : (b.reviews || 0)/1000;
+      const scoreA = a.popularityScore !== undefined ? a.popularityScore : 0;
+      const scoreB = b.popularityScore !== undefined ? b.popularityScore : 0;
       return scoreB - scoreA;
     });
 
@@ -891,7 +894,7 @@ function ShopPageContent() {
           />
           <ProductSection
             id="garden-plants"
-            title="Lawn and Garden"
+            title="Garden Plants"
             products={getCategoryProducts('garden-plants')}
           />
           <ProductSection
@@ -901,7 +904,7 @@ function ShopPageContent() {
           />
           <ProductSection
             id="supplements"
-            title="Specialty Supplements"
+            title="Supplements"
             products={getCategoryProducts('supplements')}
           />
         </div>

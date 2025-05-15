@@ -23,7 +23,7 @@ const Hero = () => {
                   Give your plants everything they need.
                 </p>
                 <Link 
-                  href="/build-a-bundle/"
+                  href="/shop/"
                   className="bg-[#FF6B6B] text-white px-8 sm:px-10 lg:px-10 py-3.5 sm:py-4 rounded-full text-base sm:text-lg font-semibold inline-block hover:bg-[#ff5252] transition-all duration-300 uppercase tracking-wide shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                 >
                   Shop Now
