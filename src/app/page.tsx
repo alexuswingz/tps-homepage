@@ -7,6 +7,7 @@ import Reviews from '@/components/Reviews';
 import SectionDivider from '@/components/SectionDivider';
 import WhoWeAre from '@/components/WhoWeAre';
 import WhatWereDoing from '@/components/WhatWereDoing';
+import EmailDiscount from '@/components/EmailDiscount';
 
 export default function Home() {
   return (
@@ -25,6 +26,7 @@ export default function Home() {
       <WhyTPS />
       <SectionDivider label="Customer Reviews" />
       <Reviews />
+      <EmailDiscount />
     </main>
   );
 }
