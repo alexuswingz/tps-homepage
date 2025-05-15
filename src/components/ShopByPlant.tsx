@@ -295,45 +295,269 @@ const ShopByPlant = () => {
   const [cursor, setCursor] = useState<string | null>(null);
   const loadMoreRef = useRef(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [fadeIn, setFadeIn] = useState(true);
 
-  // Filter products based on active tab
-  const filteredProducts = useMemo(() => {
-    if (activeTab === 'all') return products;
-
-    const tabProducts = products.filter(product => {
-      try {
-        // Filter logic based on tab
-        const title = product.title.toLowerCase();
-        switch (activeTab) {
-          case 'houseplants':
-            return title.includes('house') || title.includes('indoor');
-          case 'succulents':
-            return title.includes('succulent') || title.includes('cactus');
-          case 'tropical':
-            return title.includes('tropical') || title.includes('monstera') || title.includes('palm');
-          case 'vines':
-            return title.includes('vine') || title.includes('trailing') || title.includes('pothos');
-          default:
-            return true;
-        }
-      } catch (e) {
-        return false;
-      }
-    });
-    
-    return tabProducts;
-  }, [products, activeTab]);
-
-  // Function to fetch products with pagination
   const fetchProducts = useCallback(async (after?: string) => {
     try {
       if (after) {
         setLoadingMore(true);
       }
       
-      const query = `
+      // Define the houseplant product titles
+      const houseplantProducts = [
+        'Money Tree Fertilizer',
+        'Jade Fertilizer',
+        'Christmas Cactus Fertilizer',
+        'Cactus Fertilizer',
+        'Succulent Plant Food',
+        'Bonsai Fertilizer',
+        'Air Plant Fertilizer',
+        'Snake Plant Fertilizer',
+        'House Plant Food',
+        'Mycorrhizal Fungi for Houseplants',
+        'Granular Houseplant Food',
+        'Granular Monstera Fertilizer',
+        'Granular Lemon Tree Fertilizer',
+        'Granular Indoor Plant Food',
+        'Granular Fig Tree Fertilizer',
+        'Granular Bonsai Fertilizer',
+        'Monstera Root Supplement',
+        'Houseplant Root Supplement',
+        'Succulent Root Supplement',
+        'Root Supplement',
+        'Orchid Root Supplement',
+        'Indoor Plant Food',
+        'Instant Plant Food',
+        'Ficus Fertilizer',
+        'Banana Tree Fertilizer',
+        'Philodendron Fertilizer',
+        'Fiddle Leaf Fig Fertilizer',
+        'Dracaena Fertilizer',
+        'Bird of Paradise Fertilizer',
+        'Aloe Vera Fertilizer',
+        'ZZ Plant Fertilizer',
+        'Tropical Plant Fertilizer',
+        'Pothos Fertilizer',
+        'Bromeliad Fertilizer',
+        'Fiddle Leaf Fig Plant Food',
+        'Monstera Plant Food',
+        'African Violet Fertilizer',
+        'Alocasia Fertilizer',
+        'Anthurium Fertilizer',
+        'Bamboo Fertilizer',
+        'Brazilian Wood Plant Food',
+        'Carnivorous Plant Food',
+        'Curry Leaf Plant Fertilizer',
+        'Elephant Ear Fertilizer',
+        'Hoya Fertilizer',
+        'Lucky Bamboo Fertilizer',
+        'Orchid Plant Food',
+        'Peace Lily Fertilizer',
+        'Pitcher Plant Food'
+      ];
+
+      // Define lawn and garden product titles
+      const lawnAndGardenProducts = [
+        'Bougainvillea Fertilizer',
+        'Camellia Fertilizer',
+        'Cut Flower Food',
+        'Desert Rose Fertilizer',
+        'Flowering Fertilizer',
+        'Rose Bush Fertilizer',
+        'Rose Fertilizer',
+        'Plumeria Fertilizer',
+        'Hydrangea Fertilizer',
+        'Hibiscus Fertilizer',
+        'Azalea Fertilizer',
+        'Gardenia Fertilizer',
+        'Rhododendron Fertilizer',
+        'Petunia Fertilizer',
+        'Geranium Fertilizer',
+        'Hanging Basket Plant Food',
+        'Flowering Plant Food',
+        'Daffodil Bulb Fertilizer',
+        'Tulip Bulb Fertilizer',
+        'Mum Fertilizer',
+        'Ixora Fertilizer',
+        'Bulb Fertilizer',
+        'Lilac Bush Fertilizer',
+        'Bloom Fertilizer',
+        'Berry Fertilizer',
+        'Pepper Fertilizer',
+        'Tomato Fertilizer',
+        'Strawberry Fertilizer',
+        'Blueberry Fertilizer',
+        'Herbs and Leafy Greens Plant Food',
+        'Vegetable Fertilizer',
+        'Pumpkin Fertilizer',
+        'Potato Fertilizer',
+        'Garlic Fertilizer',
+        'Water Soluble Fertilizer',
+        'Garden Fertilizer',
+        'Plant Food Outdoor',
+        'Plant Food',
+        'Plant Fertilizer',
+        'All Purpose Fertilizer',
+        'All Purpose NPK Fertilizer',
+        'Starter Fertilizer',
+        '10-10-10 for General Use',
+        '10-10-10 for Vegetables',
+        '10-10-10 for Plants',
+        'Fall Fertilizer',
+        'Winter Fertilizer',
+        'Ivy Plant Food',
+        'Lawn Fertilizer',
+        'Mycorrhizal Fungi for Trees',
+        'Mycorrhizal Fungi for Palm Trees',
+        'Mycorrhizal Fungi for Gardens',
+        'Mycorrhizal Fungi for Citrus Trees',
+        'Mycorrhizal Fungi',
+        'Root Booster for Plants',
+        'Soil Microbes for Gardening',
+        'Trichoderma for Plants',
+        'Peach Tree Fertilizer',
+        'Olive Tree Fertilizer',
+        'Mango Tree Fertilizer',
+        'Lime Tree Fertilizer',
+        'Evergreen Fertilizer',
+        'Arborvitae Fertilizer',
+        'Palm Fertilizer',
+        'Apple Tree Fertilizer',
+        'Citrus Fertilizer',
+        'Tree Fertilizer',
+        'Fruit Tree Fertilizer',
+        'Lemon Tree Fertilizer',
+        'Avocado Tree Fertilizer',
+        '10-10-10 for Trees',
+        'Aspen Tree Fertilizer',
+        'Boxwood Fertilizer',
+        'Crepe Myrtle Fertilizer',
+        'Dogwood Tree Fertilizer',
+        'Japanese Maple Fertilizer',
+        'Magnolia Tree Fertilizer',
+        'Maple Tree Fertilizer',
+        'Oak Tree Fertilizer',
+        'Orange Tree Fertilizer',
+        'Pine Tree Fertilizer',
+        'Root Stimulator for Trees',
+        'Sago Palm Fertilizer',
+        'Shrub Fertilizer',
+        'Tree And Shrub Fertilizer',
+        'Jasmine Fertilizer'
+      ];
+      
+      // Define hydro and aquatic product titles
+      const hydroAquaticProducts = [
+        'Liquid Plant Food',
+        'Lotus Fertilizer',
+        'Aquarium Plant Fertilizer',
+        'Aquatic Plant Fertilizer',
+        'Water Garden Fertilizer',
+        'Water Lily Fertilizer',
+        'Hydroponic Nutrients',
+        'Hydroponic Plant Food'
+      ];
+      
+      // Define specialty supplements product titles
+      const specialtySupplements = [
+        'Fish Emulsion Fertilizer',
+        'Fish Fertilizer',
+        'Silica for Plants',
+        'Cal-Mag Fertilizer',
+        'Seaweed Fertilizer',
+        'Calcium for Plants',
+        'Calcium Nitrate',
+        'Worm Castings Concentrate',
+        'Compost Starter and Accelerator',
+        'Compost Tea',
+        'Sulfur for Plants',
+        'Phosphorus Fertilizer',
+        'Potassium Fertilizer',
+        'Ferrous Sulfate For Plants',
+        'Urea Fertilizer',
+        'Magnesium for Plants',
+        'Potassium Nitrate Fertilizer',
+        'Ammonium Nitrate Fertilizer',
+        'Potassium Sulfate Fertilizer',
+        'Sulfate Of Potash',
+        'Potash Fertilizer',
+        'Muriate Of Potash',
+        'Phosphorus and Potassium Fertilizer',
+        'Compost Tea for Plants',
+        'Kelp Meal Fertilizer',
+        'Nitrogen Fertilizer',
+        'Seaweed Extract for Plants',
+        'pH Down',
+        'pH Up'
+      ];
+      
+      let query;
+      let variables;
+      
+      // Use 250 as the maximum number of products to fetch at once (Shopify limit)
+      const maxProductsPerFetch = 250;
+      
+      // For all specific categories, we'll fetch all products and filter client-side
+      if (activeTab === 'houseplants' || activeTab === 'garden-plants' || 
+          activeTab === 'hydro-aquatic' || activeTab === 'supplements') {
+        query = `
+          query Products${after ? '($cursor: String!)' : ''} {
+            products(first: ${maxProductsPerFetch}${after ? ', after: $cursor' : ''}) {
+              pageInfo {
+                hasNextPage
+                endCursor
+              }
+              edges {
+                node {
+                  id
+                  title
+                  handle
+                  description
+                  featuredImage {
+                    url
+                    altText
+                  }
+                  images(first: 5) {
+                    edges {
+                      node {
+                        url
+                        altText
+                      }
+                    }
+                  }
+                  variants(first: 100) {
+                    edges {
+                      node {
+                        id
+                        title
+                        price {
+                          amount
+                          currencyCode
+                        }
+                        compareAtPrice {
+                          amount
+                          currencyCode
+                        }
+                        selectedOptions {
+                          name
+                          value
+                        }
+                        quantityAvailable
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        `;
+        
+        variables = after ? { cursor: after } : undefined;
+      } else {
+        // For "all" products, use a more general approach without filtering
+        query = `
         query Products${after ? '($cursor: String!)' : ''} {
-          products(first: 16${after ? ', after: $cursor' : ''}) {
+            products(first: ${maxProductsPerFetch}${after ? ', after: $cursor' : ''}) {
             pageInfo {
               hasNextPage
               endCursor
@@ -348,7 +572,7 @@ const ShopByPlant = () => {
                   url
                   altText
                 }
-                images(first: 3) {
+                  images(first: 5) {
                   edges {
                     node {
                       url
@@ -356,7 +580,7 @@ const ShopByPlant = () => {
                     }
                   }
                 }
-                variants(first: 25) {
+                  variants(first: 100) {
                   edges {
                     node {
                       id
@@ -382,16 +606,43 @@ const ShopByPlant = () => {
           }
         }
       `;
+        
+        variables = after ? { cursor: after } : undefined;
+      }
 
       const response = await shopifyFetch({ 
         query,
-        variables: after ? { cursor: after } : undefined
+        variables
       });
 
       if (response.status === 200 && response.body?.data?.products?.edges) {
         const { products: { edges, pageInfo } } = response.body.data;
         
-        const newProducts = edges.map(({ node }: any) => ({
+        // Filter products based on the active tab
+        let filteredEdges = edges;
+        if (activeTab === 'houseplants') {
+          const houseplantSet = new Set(houseplantProducts.map(name => name.toLowerCase()));
+          filteredEdges = edges.filter(({ node }: any) => 
+            houseplantSet.has(node.title.toLowerCase())
+          );
+        } else if (activeTab === 'garden-plants') {
+          const gardenSet = new Set(lawnAndGardenProducts.map(name => name.toLowerCase()));
+          filteredEdges = edges.filter(({ node }: any) => 
+            gardenSet.has(node.title.toLowerCase())
+          );
+        } else if (activeTab === 'hydro-aquatic') {
+          const hydroSet = new Set(hydroAquaticProducts.map(name => name.toLowerCase()));
+          filteredEdges = edges.filter(({ node }: any) => 
+            hydroSet.has(node.title.toLowerCase())
+          );
+        } else if (activeTab === 'supplements') {
+          const supplementsSet = new Set(specialtySupplements.map(name => name.toLowerCase()));
+          filteredEdges = edges.filter(({ node }: any) => 
+            supplementsSet.has(node.title.toLowerCase())
+          );
+        }
+        
+        const newProducts = filteredEdges.map(({ node }: any) => ({
           ...node,
           reviews: Math.floor(Math.random() * 1000) + 100,
         }));
@@ -403,8 +654,24 @@ const ShopByPlant = () => {
         }));
 
         setProducts(prev => after ? [...prev, ...productsWithBestSellers] : productsWithBestSellers);
+        
+        // If hasNextPage is true and we didn't get all products for the current category,
+        // we should fetch the next page automatically
+        const currentCategoryList = activeTab === 'houseplants' ? houseplantProducts : 
+                                   activeTab === 'garden-plants' ? lawnAndGardenProducts :
+                                   activeTab === 'hydro-aquatic' ? hydroAquaticProducts : 
+                                   activeTab === 'supplements' ? specialtySupplements : [];
+                                    
+        if (pageInfo.hasNextPage && 
+            (activeTab === 'houseplants' || activeTab === 'garden-plants' || 
+             activeTab === 'hydro-aquatic' || activeTab === 'supplements') && 
+            currentCategoryList.length > productsWithBestSellers.length) {
+          // Auto-fetch next page
+          fetchProducts(pageInfo.endCursor);
+        } else {
         setHasMore(pageInfo.hasNextPage);
         setCursor(pageInfo.endCursor);
+        }
       } else {
         setError('Failed to fetch products');
         console.error('Invalid response format:', response);
@@ -416,19 +683,39 @@ const ShopByPlant = () => {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, []);
+  }, [activeTab]);
 
-  // Initial fetch
+  // Handle tab change with animation
+  const handleTabChange = (tab: string) => {
+    if (tab === activeTab) return;
+    
+    // Fade out
+    setFadeIn(false);
+    
+    // Change tab after short delay
+    setTimeout(() => {
+      setActiveTab(tab);
+      // Fade in
+      setTimeout(() => {
+        setFadeIn(true);
+      }, 50);
+    }, 300);
+  };
+
+  // Update useEffect to refetch when activeTab changes
   useEffect(() => {
     try {
+      setLoading(true);
+      setCursor(null);
+      setProducts([]);
       fetchProducts();
       setIsMounted(true);
     } catch (error) {
-      console.error("Error in initial product fetch:", error);
+      console.error("Error in product fetch:", error);
       setError("Failed to load products. Please try again later.");
       setLoading(false);
     }
-  }, [fetchProducts]);
+  }, [fetchProducts, activeTab]);
 
   const backgroundColors = [
     "bg-[#F2F7F2]", // Light mint green
@@ -443,41 +730,51 @@ const ShopByPlant = () => {
         <h2 className="text-4xl font-bold text-center mb-12">Shop By Plant</h2>
         
         <div className="mb-8 flex flex-wrap justify-center gap-3">
-          <Link 
-            href="/category/houseplants"
+          <button 
             className={`${activeTab === 'houseplants' ? 'bg-[#8B7355] text-white' : 'bg-[#E8E0D4] text-[#8B7355]'} px-6 py-2.5 rounded-full font-medium transition-colors hover:bg-[#8B7355] hover:text-white`}
-            onClick={() => setActiveTab('houseplants')}
+            onClick={(e) => {
+              e.preventDefault();
+              handleTabChange('houseplants');
+            }}
           >
             HOUSEPLANTS
-          </Link>
-          <Link 
-            href="/category/garden-plants"
+          </button>
+          <button 
             className={`${activeTab === 'garden-plants' ? 'bg-[#8B7355] text-white' : 'bg-[#E8E0D4] text-[#8B7355]'} px-6 py-2.5 rounded-full font-medium transition-colors hover:bg-[#8B7355] hover:text-white`}
-            onClick={() => setActiveTab('garden-plants')}
+            onClick={(e) => {
+              e.preventDefault();
+              handleTabChange('garden-plants');
+            }}
           >
             LAWN AND GARDEN
-          </Link>
-          <Link 
-            href="/category/hydro-aquatic"
+          </button>
+          <button 
             className={`${activeTab === 'hydro-aquatic' ? 'bg-[#8B7355] text-white' : 'bg-[#E8E0D4] text-[#8B7355]'} px-6 py-2.5 rounded-full font-medium transition-colors hover:bg-[#8B7355] hover:text-white`}
-            onClick={() => setActiveTab('hydro-aquatic')}
+            onClick={(e) => {
+              e.preventDefault();
+              handleTabChange('hydro-aquatic');
+            }}
           >
             HYDRO & AQUATIC
-          </Link>
-          <Link 
-            href="/category/supplements"
+          </button>
+          <button 
             className={`${activeTab === 'supplements' ? 'bg-[#8B7355] text-white' : 'bg-[#E8E0D4] text-[#8B7355]'} px-6 py-2.5 rounded-full font-medium transition-colors hover:bg-[#8B7355] hover:text-white`}
-            onClick={() => setActiveTab('supplements')}
+            onClick={(e) => {
+              e.preventDefault();
+              handleTabChange('supplements');
+            }}
           >
             SPECIALTY SUPPLEMENTS
-          </Link>
-          <Link 
-            href="/shop"
+          </button>
+          <button 
             className="bg-[#FF6B6B] text-white px-6 py-2.5 rounded-full font-medium hover:bg-[#ff5252] transition-colors"
-            onClick={() => setActiveTab('all')}
+            onClick={(e) => {
+              e.preventDefault();
+              handleTabChange('all');
+            }}
           >
             SHOP ALL
-          </Link>
+          </button>
         </div>
 
         <div className="relative">
@@ -485,8 +782,10 @@ const ShopByPlant = () => {
             <div className="w-full text-center py-12">Loading products...</div>
           ) : error ? (
             <div className="w-full text-center py-12 text-red-500">{error}</div>
-          ) : filteredProducts && filteredProducts.length > 0 && isMounted ? (
-            <div className="swiper-wrapper-custom">
+          ) : products && products.length > 0 && isMounted ? (
+            <div 
+              className={`swiper-wrapper-custom transition-opacity duration-300 ease-in-out ${fadeIn ? 'opacity-100' : 'opacity-0'}`}
+            >
               <Swiper
                 modules={[Navigation, Pagination, A11y]}
                 spaceBetween={16}
@@ -527,7 +826,7 @@ const ShopByPlant = () => {
                 longSwipesRatio={0.1}
                 followFinger={true}
               >
-                {filteredProducts.map((product, index) => (
+                {products.map((product, index) => (
                   <SwiperSlide key={product.id}>
                     <ProductWrapper
                       product={product}

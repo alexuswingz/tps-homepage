@@ -56,6 +56,24 @@ body {
   }
 }
 
+@keyframes marquee-mobile {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes marquee-reverse-mobile {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
 /* Divider animations */
 @keyframes pulse-glow {
   0%, 100% {
@@ -121,6 +139,14 @@ body {
 
 .animate-marquee-reverse {
   animation: marquee-reverse 90s linear infinite;
+}
+
+.animate-marquee-mobile {
+  animation: marquee-mobile 30s linear infinite;
+}
+
+.animate-marquee-reverse-mobile {
+  animation: marquee-reverse-mobile 30s linear infinite;
 }
 
 /* Smooth page transitions */

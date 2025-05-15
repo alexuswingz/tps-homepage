@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 const Footer: React.FC = () => {
   return (
-    <footer className="bg-[#FF7C7B] text-white py-12">
+    <footer className="bg-[#FDF6EF] bg-[url('/assets/footer-bg.png')] bg-cover bg-center bg-no-repeat text-white pb-12 h-full" style={{ paddingTop: '32rem' }}>
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Leaf icon */}

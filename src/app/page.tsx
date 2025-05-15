@@ -8,15 +8,24 @@ import SectionDivider from '@/components/SectionDivider';
 import WhoWeAre from '@/components/WhoWeAre';
 import WhatWereDoing from '@/components/WhatWereDoing';
 import EmailDiscount from '@/components/EmailDiscount';
+import Image from "next/image";
 
 export default function Home() {
   return (
     <main className="min-h-screen bg-[#FDF6EF]">
       <Hero />
+      <div className="w-full relative">
+        <Image
+          src="/assets/tps-torn.png" 
+          alt="Decorative torn paper edge"
+          width={1920}
+          height={30}
+          className="w-full h-auto object-contain mx-auto"
+          priority
+        />
+      </div>
       <ShopByPlant />
-      <SectionDivider label="Who We Are" />
       <WhoWeAre />
-      <SectionDivider label="What We're Doing" />
       <WhatWereDoing />
       <SectionDivider label="Plant Care Tips" />
       <PlantCare />
