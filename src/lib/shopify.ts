@@ -275,4 +275,364 @@ export const createCheckoutUrl = async (cart: any[], discountCode?: string) => {
     console.error('Error creating checkout URL:', error);
     return null;
   }
+};
+
+/**
+ * Fetches recommended add-on products for the cart
+ * This can be customized with tags or collections for specific recommendations
+ */
+export const getRecommendedAddons = async (limit = 4) => {
+  // First try to fetch products tagged as add-ons or with specific product types
+  const query = `
+    query RecommendedAddons($first: Int!) {
+      products(first: $first, sortKey: BEST_SELLING, query: "tag:addon OR tag:essential OR tag:recommended OR product_type:supplement OR product_type:fertilizer") {
+        edges {
+          node {
+            id
+            title
+            description
+            handle
+            featuredImage {
+              url
+              altText
+            }
+            variants(first: 3) {
+              edges {
+                node {
+                  id
+                  title
+                  price {
+                    amount
+                    currencyCode
+                  }
+                  selectedOptions {
+                    name
+                    value
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  try {
+    const response = await shopifyFetch({
+      query,
+      variables: { first: limit }
+    });
+
+    const edges = response.status === 200 ? response.body?.data?.products?.edges : null;
+    
+    // If we got results, return them
+    if (edges && edges.length > 0) {
+      console.log(`Found ${edges.length} recommended add-on products`);
+      return edges.map(({ node }: any) => ({
+        id: node.id,
+        title: node.title,
+        description: node.description || "",
+        handle: node.handle,
+        featuredImage: {
+          url: node.featuredImage?.url || 'https://cdn.shopify.com/s/files/1/0794/2920/1515/files/placeholder-image.jpg',
+          altText: node.featuredImage?.altText || node.title
+        },
+        variant: node.variants.edges[0]?.node || {
+          id: node.id.replace("Product", "ProductVariant"),
+          title: "Default",
+          price: {
+            amount: "19.99",
+            currencyCode: "USD"
+          },
+          selectedOptions: []
+        },
+        variants: node.variants.edges.map((edge: any) => edge.node)
+      }));
+    }
+    
+    // If no tagged products found, fall back to best-selling products
+    console.log("No tagged add-ons found, falling back to fetching best sellers");
+    const fallbackQuery = `
+      query BestSellingProducts($first: Int!) {
+        products(first: $first, sortKey: BEST_SELLING) {
+          edges {
+            node {
+              id
+              title
+              description
+              handle
+              featuredImage {
+                url
+                altText
+              }
+              variants(first: 3) {
+                edges {
+                  node {
+                    id
+                    title
+                    price {
+                      amount
+                      currencyCode
+                    }
+                    selectedOptions {
+                      name
+                      value
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const fallbackResponse = await shopifyFetch({
+      query: fallbackQuery,
+      variables: { first: limit }
+    });
+
+    const fallbackEdges = fallbackResponse.status === 200 ? 
+      fallbackResponse.body?.data?.products?.edges : null;
+    
+    if (fallbackEdges && fallbackEdges.length > 0) {
+      console.log(`Found ${fallbackEdges.length} best-selling products`);
+      return fallbackEdges.map(({ node }: any) => ({
+        id: node.id,
+        title: node.title,
+        description: node.description || "",
+        handle: node.handle,
+        featuredImage: {
+          url: node.featuredImage?.url || 'https://cdn.shopify.com/s/files/1/0794/2920/1515/files/placeholder-image.jpg',
+          altText: node.featuredImage?.altText || node.title
+        },
+        variant: node.variants.edges[0]?.node || {
+          id: node.id.replace("Product", "ProductVariant"),
+          title: "Default",
+          price: {
+            amount: "19.99",
+            currencyCode: "USD"
+          },
+          selectedOptions: []
+        },
+        variants: node.variants.edges.map((edge: any) => edge.node)
+      }));
+    }
+    
+    // If still no products, try fetching by product names
+    console.log("No best sellers found, trying to fetch specific product names");
+    const productNamesQuery = `
+      query ProductsByTitle($first: Int!) {
+        products(first: $first, query: "title:silica OR title:seaweed OR title:cal-mag OR title:magnesium OR title:calcium OR title:fertilizer") {
+          edges {
+            node {
+              id
+              title
+              description
+              handle
+              featuredImage {
+                url
+                altText
+              }
+              variants(first: 3) {
+                edges {
+                  node {
+                    id
+                    title
+                    price {
+                      amount
+                      currencyCode
+                    }
+                    selectedOptions {
+                      name
+                      value
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    `;
+    
+    const productNamesResponse = await shopifyFetch({
+      query: productNamesQuery,
+      variables: { first: limit }
+    });
+    
+    const productNamesEdges = productNamesResponse.status === 200 ? 
+      productNamesResponse.body?.data?.products?.edges : null;
+      
+    if (productNamesEdges && productNamesEdges.length > 0) {
+      console.log(`Found ${productNamesEdges.length} products by name`);
+      return productNamesEdges.map(({ node }: any) => ({
+        id: node.id,
+        title: node.title,
+        description: node.description || "",
+        handle: node.handle,
+        featuredImage: {
+          url: node.featuredImage?.url || 'https://cdn.shopify.com/s/files/1/0794/2920/1515/files/placeholder-image.jpg',
+          altText: node.featuredImage?.altText || node.title
+        },
+        variant: node.variants.edges[0]?.node || {
+          id: node.id.replace("Product", "ProductVariant"),
+          title: "Default",
+          price: {
+            amount: "19.99",
+            currencyCode: "USD"
+          },
+          selectedOptions: []
+        },
+        variants: node.variants.edges.map((edge: any) => edge.node)
+      }));
+    }
+    
+    // Last attempt - fetch any available products
+    console.log("Could not find specific products, fetching any available products");
+    const anyProductsQuery = `
+      query AnyProducts($first: Int!) {
+        products(first: $first) {
+          edges {
+            node {
+              id
+              title
+              description
+              handle
+              featuredImage {
+                url
+                altText
+              }
+              variants(first: 3) {
+                edges {
+                  node {
+                    id
+                    title
+                    price {
+                      amount
+                      currencyCode
+                    }
+                    selectedOptions {
+                      name
+                      value
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    `;
+    
+    const anyProductsResponse = await shopifyFetch({
+      query: anyProductsQuery,
+      variables: { first: limit }
+    });
+    
+    const anyProductsEdges = anyProductsResponse.status === 200 ? 
+      anyProductsResponse.body?.data?.products?.edges : null;
+      
+    if (anyProductsEdges && anyProductsEdges.length > 0) {
+      console.log(`Found ${anyProductsEdges.length} products from the store`);
+      return anyProductsEdges.map(({ node }: any) => ({
+        id: node.id,
+        title: node.title,
+        description: node.description || "",
+        handle: node.handle,
+        featuredImage: {
+          url: node.featuredImage?.url || 'https://cdn.shopify.com/s/files/1/0794/2920/1515/files/placeholder-image.jpg',
+          altText: node.featuredImage?.altText || node.title
+        },
+        variant: node.variants.edges[0]?.node || {
+          id: node.id.replace("Product", "ProductVariant"),
+          title: "Default",
+          price: {
+            amount: "19.99",
+            currencyCode: "USD"
+          },
+          selectedOptions: []
+        },
+        variants: node.variants.edges.map((edge: any) => edge.node)
+      }));
+    }
+    
+    // If absolutely nothing is found, return an empty array
+    console.log("No products found from the Shopify store");
+    return [];
+
+  } catch (error) {
+    console.error('Error fetching recommended add-ons:', error);
+    // Make another attempt with a simpler query if there was an error
+    try {
+      console.log("Error occurred, attempting to fetch any products");
+      const simpleQuery = `
+        query SimpleProducts($first: Int!) {
+          products(first: $first) {
+            edges {
+              node {
+                id
+                title
+                description
+                handle
+                featuredImage {
+                  url
+                  altText
+                }
+                variants(first: 1) {
+                  edges {
+                    node {
+                      id
+                      title
+                      price {
+                        amount
+                        currencyCode
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      `;
+      
+      const simpleResponse = await shopifyFetch({
+        query: simpleQuery,
+        variables: { first: limit }
+      });
+      
+      const simpleEdges = simpleResponse.status === 200 ? 
+        simpleResponse.body?.data?.products?.edges : null;
+        
+      if (simpleEdges && simpleEdges.length > 0) {
+        console.log(`Found ${simpleEdges.length} products with simple query`);
+        return simpleEdges.map(({ node }: any) => ({
+          id: node.id,
+          title: node.title,
+          description: node.description || "",
+          handle: node.handle,
+          featuredImage: {
+            url: node.featuredImage?.url || 'https://cdn.shopify.com/s/files/1/0794/2920/1515/files/placeholder-image.jpg',
+            altText: node.featuredImage?.altText || node.title
+          },
+          variant: node.variants.edges[0]?.node || {
+            id: node.id.replace("Product", "ProductVariant"),
+            title: "Default",
+            price: {
+              amount: "19.99",
+              currencyCode: "USD"
+            }
+          },
+          variants: node.variants.edges.map((edge: any) => edge.node)
+        }));
+      }
+    } catch (finalError) {
+      console.error('Final error fetching products:', finalError);
+    }
+    
+    // Return empty array if all attempts fail
+    return [];
+  }
 }; 

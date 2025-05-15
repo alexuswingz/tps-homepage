@@ -12,7 +12,7 @@ const BundlePromo = () => {
             {/* Left side - Image */}
             <div className="relative h-[300px] md:h-auto">
               <Image
-                src="/placeholder-bundle.png"
+                src="/assets/buy.png"
                 alt="Build your bundle of plant food"
                 fill
                 className="object-cover"

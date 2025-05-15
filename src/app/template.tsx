@@ -10,6 +10,7 @@ import Footer from "@/components/Footer";
 import PageTransition from "@/components/PageTransition";
 import { AnimatePresence } from "framer-motion";
 import { prefetchCommonProductData } from '@/lib/shopify';
+import { useRouter } from 'next/navigation';
 
 interface CartUIContextType {
   isCartOpen: boolean;
@@ -33,6 +34,49 @@ export default function Template({
   children: React.ReactNode;
 }) {
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const router = useRouter();
+
+  // Handle routing for S3 static hosting
+  useEffect(() => {
+    // Check for hash routing (e.g. /#/nutrients)
+    if (typeof window !== 'undefined') {
+      // Get the initial hash
+      const handleHashChange = () => {
+        const hash = window.location.hash;
+        if (hash && hash.startsWith('#/')) {
+          const route = hash.substring(2); // Remove the '#/' prefix
+          if (['nutrients', 'shop', 'cart', 'build-a-bundle', 'search'].includes(route)) {
+            console.log(`Hash navigation to: ${route}`);
+            // Use router to navigate to the actual route
+            router.push(`/${route}`);
+          } else if (route.startsWith('product/')) {
+            console.log(`Hash navigation to product: ${route}`);
+            router.push(`/${route}`);
+          }
+        }
+      };
+
+      // Listen for hash changes
+      window.addEventListener('hashchange', handleHashChange);
+      
+      // Check hash on initial load
+      handleHashChange();
+      
+      // Check for redirectPath in sessionStorage
+      const redirectPath = sessionStorage.getItem('redirectPath');
+      if (redirectPath) {
+        console.log(`Restoring from session: ${redirectPath}`);
+        // Clear it immediately to prevent loops
+        sessionStorage.removeItem('redirectPath');
+        // Navigate to the stored path
+        router.push(redirectPath);
+      }
+
+      return () => {
+        window.removeEventListener('hashchange', handleHashChange);
+      };
+    }
+  }, [router]);
 
   // Prefetch common product data when the template loads
   useEffect(() => {

@@ -214,7 +214,7 @@ const BuyThreePromo = () => {
           </div>
           
           <Link 
-            href="/build-bundle"
+            href="/build-a-bundle/"
             className="inline-block bg-[#FF6B6B] text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-full text-sm sm:text-base font-medium hover:bg-opacity-90 transition-colors text-center"
           >
             BUILD YOUR OWN

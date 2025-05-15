@@ -60,13 +60,13 @@ const PlantCare = () => {
 
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start">
               <Link 
-                href="/indoor"
+                href="/category/houseplants/"
                 className="bg-[#FF6B6B] text-white px-6 sm:px-8 py-3 rounded-full text-base sm:text-lg font-medium hover:bg-[#ff5252] transition-colors w-full sm:w-auto text-center"
               >
                 SHOP INDOOR
               </Link>
               <Link 
-                href="/garden"
+                href="/category/garden-plants/"
                 className="bg-[#8B7355] text-white px-6 sm:px-8 py-3 rounded-full text-base sm:text-lg font-medium hover:bg-[#7A6548] transition-colors w-full sm:w-auto text-center"
               >
                 SHOP GARDEN

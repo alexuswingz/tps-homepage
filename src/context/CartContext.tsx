@@ -64,20 +64,43 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         console.log('Loading cart from localStorage:', savedCart);
         
         if (savedCart) {
-          const parsedCart = JSON.parse(savedCart);
-          setCart(parsedCart);
-          console.log('Cart loaded:', parsedCart);
+          try {
+            const parsedCart = JSON.parse(savedCart);
+            // Validate cart data structure before setting state
+            if (Array.isArray(parsedCart)) {
+              setCart(parsedCart);
+              console.log('Cart loaded:', parsedCart);
+            } else {
+              console.warn('Invalid cart format in localStorage, using empty cart');
+              setCart([]);
+            }
+          } catch (parseError) {
+            console.error('Failed to parse cart JSON:', parseError);
+            // Clear corrupted data
+            localStorage.removeItem(CART_STORAGE_KEY);
+            setCart([]);
+          }
         }
         
         const savedDiscount = localStorage.getItem(DISCOUNT_STORAGE_KEY);
         if (savedDiscount) {
-          const { code, valid, amount } = JSON.parse(savedDiscount);
-          setDiscountCode(code);
-          setHasValidDiscount(valid);
-          setDiscountAmount(amount);
+          try {
+            const discountData = JSON.parse(savedDiscount);
+            if (discountData && typeof discountData === 'object') {
+              const { code, valid, amount } = discountData;
+              setDiscountCode(code || '');
+              setHasValidDiscount(!!valid);
+              setDiscountAmount(Number(amount) || 0);
+            }
+          } catch (discountError) {
+            console.error('Failed to parse discount data:', discountError);
+            localStorage.removeItem(DISCOUNT_STORAGE_KEY);
+          }
         }
       } catch (e) {
-        console.error('Failed to parse cart from localStorage:', e);
+        console.error('Failed to access localStorage:', e);
+        // For permissions issues or other localStorage problems
+        setCart([]);
       } finally {
         setIsInitialized(true);
       }
@@ -87,24 +110,29 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   // Update localStorage and cartCount whenever cart changes
   useEffect(() => {
     if (isInitialized && typeof window !== 'undefined') {
-      console.log('Saving cart to localStorage:', cart);
-      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
-      const newCount = cart.reduce((total, item) => total + item.quantity, 0);
-      setCartCount(newCount);
-      console.log('Updated cart count:', newCount);
-      
-      // Auto-apply BUY3SAVE10 discount when cart has 3 or more items
-      if (newCount >= 3 && !hasValidDiscount) {
-        // Apply the discount code
-        const normalizedCode = 'BUY3SAVE10';
-        setDiscountCode(normalizedCode);
-        setHasValidDiscount(true);
-        setDiscountAmount(DISCOUNT_CODES[normalizedCode as keyof typeof DISCOUNT_CODES].amount);
-      } else if (newCount < 3 && discountCode === 'BUY3SAVE10') {
-        // Remove the discount if items are removed and total is less than 3
-        setDiscountCode('');
-        setHasValidDiscount(false);
-        setDiscountAmount(0);
+      try {
+        console.log('Saving cart to localStorage:', cart);
+        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+        const newCount = cart.reduce((total, item) => total + item.quantity, 0);
+        setCartCount(newCount);
+        console.log('Updated cart count:', newCount);
+        
+        // Auto-apply BUY3SAVE10 discount when cart has 3 or more items
+        if (newCount >= 3 && !hasValidDiscount) {
+          // Apply the discount code
+          const normalizedCode = 'BUY3SAVE10';
+          setDiscountCode(normalizedCode);
+          setHasValidDiscount(true);
+          setDiscountAmount(DISCOUNT_CODES[normalizedCode as keyof typeof DISCOUNT_CODES].amount);
+        } else if (newCount < 3 && discountCode === 'BUY3SAVE10') {
+          // Remove the discount if items are removed and total is less than 3
+          setDiscountCode('');
+          setHasValidDiscount(false);
+          setDiscountAmount(0);
+        }
+      } catch (error) {
+        console.error('Error saving cart to localStorage:', error);
+        // Continue execution even if localStorage fails
       }
     }
   }, [cart, isInitialized, hasValidDiscount, discountCode]);
@@ -112,11 +140,16 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   // Save discount state to localStorage
   useEffect(() => {
     if (isInitialized && typeof window !== 'undefined') {
-      localStorage.setItem(DISCOUNT_STORAGE_KEY, JSON.stringify({
-        code: discountCode,
-        valid: hasValidDiscount,
-        amount: discountAmount
-      }));
+      try {
+        localStorage.setItem(DISCOUNT_STORAGE_KEY, JSON.stringify({
+          code: discountCode,
+          valid: hasValidDiscount,
+          amount: discountAmount
+        }));
+      } catch (error) {
+        console.error('Error saving discount to localStorage:', error);
+        // Continue execution even if localStorage fails
+      }
     }
   }, [discountCode, hasValidDiscount, discountAmount, isInitialized]);
 

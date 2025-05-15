@@ -34,3 +34,40 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Development Modes
+
+This project supports two development modes:
+
+1. **Static Export Mode** (default): Uses client-side implementation for API features
+   ```bash
+   npm run dev
+   ```
+
+2. **API Mode**: Enables server-side API routes for development
+   ```bash
+   npm run dev:api
+   ```
+
+## Plant Nutrients Feature
+
+The Plant Nutrients feature provides fertilizer recommendations based on identified plants:
+
+- Uses Plant.ID API for plant identification
+- Provides product recommendations from our product catalog
+- Works in both static export and server-side API environments
+- Implements client-side fallbacks for static hosting
+
+### How Product Recommendations Work
+
+The application provides product recommendations using three approaches, with automatic fallback:
+
+1. **Server API** (when available): Uses `/api/get-recommendations` route
+2. **Remote API** (when deployed): Calls `https://api.tpsplantfoods.com/api/get-recommendations`
+3. **Client-side Fallback** (always available): Uses embedded product data matching algorithm
+
+This ensures the application works in all environments, including:
+- Local development with API routes
+- Local development without API routes
+- Static hosting on S3/CloudFront
+- Production with API server

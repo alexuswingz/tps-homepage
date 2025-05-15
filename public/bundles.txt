@@ -1,0 +1,10 @@
+This file contains information about our plant bundles.
+
+Our shop offers various plant bundles for different environments and purposes:
+1. Starter House Plant Bundle
+2. Tropical Plant Collection
+3. Office Plant Bundle
+4. Low-Light Plant Collection
+5. Pet-Friendly Plant Selection
+
+Each bundle comes with care instructions and appropriate plant food samples. 

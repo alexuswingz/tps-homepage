@@ -23,7 +23,7 @@ const Hero = () => {
                   Give your plants everything they need.
                 </p>
                 <Link 
-                  href="/build-bundle"
+                  href="/build-a-bundle/"
                   className="bg-[#FF6B6B] text-white px-8 sm:px-10 lg:px-10 py-3.5 sm:py-4 rounded-full text-base sm:text-lg font-semibold inline-block hover:bg-[#ff5252] transition-all duration-300 uppercase tracking-wide shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                 >
                   Build Your Bundle
@@ -42,7 +42,7 @@ const Hero = () => {
             {/* Right Section - Hidden on mobile, 30% on desktop */}
             <div className="hidden lg:flex relative w-full lg:w-[30%] h-[300px] sm:h-[350px] lg:h-auto bg-[#00C9B0] items-center justify-center rounded-r-3xl overflow-visible">
               <Link 
-                href="/build-bundle" 
+                href="/build-a-bundle/" 
                 className="absolute transform lg:left-[-25%] w-[593px] h-[593px] scale-110 transition-transform duration-500 ease-out hover:scale-[1.15] cursor-pointer z-20"
               >
                 <Image

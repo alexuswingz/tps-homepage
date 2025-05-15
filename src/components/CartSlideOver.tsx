@@ -5,18 +5,54 @@ import { Dialog, Transition } from '@headlessui/react';
 import { XMarkIcon, MinusIcon, PlusIcon, TrashIcon, XCircleIcon } from '@heroicons/react/24/outline';
 import { useCart } from '@/context/CartContext';
 import Image from 'next/image';
-import { createCheckoutUrl } from '@/lib/shopify';
+import { createCheckoutUrl, getRecommendedAddons } from '@/lib/shopify';
 
 interface CartSlideOverProps {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
 }
 
+interface AddonProduct {
+  id: string;
+  title: string;
+  description: string;
+  handle: string;
+  featuredImage: {
+    url: string;
+    altText: string;
+  };
+  variant: {
+    id: string;
+    title: string;
+    price: {
+      amount: string;
+      currencyCode: string;
+    };
+    selectedOptions?: {
+      name: string;
+      value: string;
+    }[];
+  };
+  variants?: Array<{
+    id: string;
+    title: string;
+    price: {
+      amount: string;
+      currencyCode: string;
+    };
+    selectedOptions?: {
+      name: string;
+      value: string;
+    }[];
+  }>;
+}
+
 export default function CartSlideOver({ isOpen, setIsOpen }: CartSlideOverProps) {
   const { 
     cart, 
     removeFromCart, 
-    updateQuantity, 
+    updateQuantity,
+    addToCart, 
     cartCount,
     discountCode,
     setDiscountCode,
@@ -31,6 +67,9 @@ export default function CartSlideOver({ isOpen, setIsOpen }: CartSlideOverProps)
   const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
   const [inputDiscountCode, setInputDiscountCode] = useState('');
   const [discountError, setDiscountError] = useState('');
+  const [recommendedAddons, setRecommendedAddons] = useState<AddonProduct[]>([]);
+  const [isLoadingAddons, setIsLoadingAddons] = useState(false);
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
 
   // Handle body scroll lock
   useEffect(() => {
@@ -45,6 +84,34 @@ export default function CartSlideOver({ isOpen, setIsOpen }: CartSlideOverProps)
       document.body.style.overflow = '';
       document.body.style.paddingRight = '';
     };
+  }, [isOpen]);
+
+  // Fetch recommended add-ons
+  useEffect(() => {
+    const fetchAddons = async () => {
+      if (isOpen) {
+        setIsLoadingAddons(true);
+        try {
+          const addons = await getRecommendedAddons(4); // Fetch more recommendations
+          setRecommendedAddons(addons);
+          
+          // Initialize selected options for each addon
+          const initialOptions: Record<string, string> = {};
+          addons.forEach((addon: AddonProduct) => {
+            if (addon.variant?.selectedOptions && addon.variant.selectedOptions.length > 0) {
+              initialOptions[addon.id] = addon.variant.title;
+            }
+          });
+          setSelectedOptions(initialOptions);
+        } catch (error) {
+          console.error('Error fetching recommended add-ons:', error);
+        } finally {
+          setIsLoadingAddons(false);
+        }
+      }
+    };
+
+    fetchAddons();
   }, [isOpen]);
 
   // Generate checkout URL when cart changes or discount changes
@@ -113,6 +180,24 @@ export default function CartSlideOver({ isOpen, setIsOpen }: CartSlideOverProps)
     return { progress, remaining, totalItems };
   };
 
+  const handleAddAddon = (addon: AddonProduct) => {
+    addToCart({
+      variantId: addon.variant.id,
+      productId: addon.id,
+      title: addon.title,
+      variantTitle: addon.variant.title,
+      price: addon.variant.price,
+      image: {
+        url: addon.featuredImage.url,
+        altText: addon.featuredImage.altText
+      }
+    });
+  };
+
+  const isItemInCart = (variantId: string) => {
+    return cart.some(item => item.variantId === variantId);
+  };
+
   const { progress, remaining, totalItems } = calculateProgress();
   const subtotal = calculateTotal();
   const finalTotal = calculateDiscountedTotal(subtotal);
@@ -166,36 +251,12 @@ export default function CartSlideOver({ isOpen, setIsOpen }: CartSlideOverProps)
                     </div>
                   </div>
 
-                  {/* BUY3SAVE10 progress bar */}
-                  <div className="mt-8">
-                    <p className="text-center text-sm text-gray-600 mb-2">
-                      {remaining > 0 ? (
-                        `Add ${remaining} more item${remaining !== 1 ? 's' : ''} to get $10 off!`
-                      ) : (
-                        'You\'ve earned $10 off with BUY3SAVE10! 🎉'
-                      )}
-                    </p>
-                    <div className="w-full bg-gray-200 rounded-full h-2.5">
-                      <div
-                        className="bg-[#8B7355] h-2.5 rounded-full transition-all duration-500"
-                        style={{ width: `${progress}%` }}
-                      />
-                    </div>
-                    <div className="flex justify-between mt-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 rounded-full bg-[#8B7355] flex items-center justify-center">
-                          <span className="text-white text-xs">✓</span>
-                        </div>
-                        <span className="text-xs">{totalItems}/3 Products</span>
-                      </div>
-                    </div>
-                  </div>
-
                   <div className="mt-8">
                     <div className="flow-root">
                       {cart.length === 0 ? (
                         <div className="text-center py-12">
-                          <p className="text-gray-500">Your bag is empty</p>
+                          <p className="text-gray-500 mb-8">Your bag is empty</p>
+                          <div className="h-px w-full bg-gray-200"></div>
                         </div>
                       ) : (
                         <ul role="list" className="-my-6 divide-y divide-gray-200">
@@ -225,17 +286,17 @@ export default function CartSlideOver({ isOpen, setIsOpen }: CartSlideOverProps)
                                   <p className="mt-1 text-sm text-gray-500">{item.variantTitle}</p>
                                 </div>
                                 <div className="flex flex-1 items-end justify-between text-sm">
-                                  <div className="flex items-center border border-gray-200 rounded-full">
+                                  <div className="flex items-center border border-gray-200 rounded-md">
                                     <button
                                       onClick={() => updateQuantity(item.variantId, item.quantity - 1)}
-                                      className="p-2 hover:bg-gray-100 rounded-l-full"
+                                      className="p-2 hover:bg-gray-100 rounded-l-md"
                                     >
                                       <MinusIcon className="h-4 w-4" />
                                     </button>
                                     <span className="px-4 py-2">{item.quantity}</span>
                                     <button
                                       onClick={() => updateQuantity(item.variantId, item.quantity + 1)}
-                                      className="p-2 hover:bg-gray-100 rounded-r-full"
+                                      className="p-2 hover:bg-gray-100 rounded-r-md"
                                     >
                                       <PlusIcon className="h-4 w-4" />
                                     </button>
@@ -244,7 +305,7 @@ export default function CartSlideOver({ isOpen, setIsOpen }: CartSlideOverProps)
                                   <button
                                     type="button"
                                     onClick={() => removeFromCart(item.variantId)}
-                                    className="text-gray-400 hover:text-gray-500"
+                                    className="ml-4 text-gray-400 hover:text-gray-500"
                                   >
                                     <TrashIcon className="h-5 w-5" />
                                   </button>
@@ -253,6 +314,91 @@ export default function CartSlideOver({ isOpen, setIsOpen }: CartSlideOverProps)
                             </li>
                           ))}
                         </ul>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Essential Add-ons Section */}
+                  <div className="mt-10">
+                    <div className="border-t border-gray-200 pt-10">
+                      <h2 className="text-xl font-bold text-gray-900 mb-1 text-center">RECOMMENDED FOR YOU</h2>
+                      <p className="text-center text-gray-600 text-sm mb-6">
+                        {cart.length === 0 ? 'Products you might like' : 'Complete your order with these essential add-ons'}
+                      </p>
+                      
+                      {cart.length > 0 && (
+                        <div className="flex items-center justify-center gap-1 mb-4">
+                          <div className="w-8 h-8 bg-[#8B7355] rounded-full flex items-center justify-center text-white text-xs">
+                            {Math.min(totalItems, 3)}/3
+                          </div>
+                          <span className="text-xs text-gray-500">Products</span>
+                        </div>
+                      )}
+                      
+                      {isLoadingAddons ? (
+                        <div className="flex justify-center py-6">
+                          <div className="animate-pulse w-full max-w-sm">
+                            <div className="flex space-x-4">
+                              <div className="h-16 w-16 bg-gray-200 rounded"></div>
+                              <div className="flex-1 py-1 space-y-3">
+                                <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+                                <div className="h-3 bg-gray-200 rounded"></div>
+                                <div className="h-3 bg-gray-200 rounded w-5/6"></div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 gap-4">
+                          {recommendedAddons.map((addon) => (
+                            <div key={addon.id} className="flex flex-col border border-gray-200 rounded-lg p-3 bg-white">
+                              <div className="relative h-32 w-full overflow-hidden rounded-md mb-3">
+                                <Image
+                                  src={addon.featuredImage.url}
+                                  alt={addon.featuredImage.altText}
+                                  fill
+                                  className="object-cover object-center"
+                                  sizes="(max-width: 768px) 50vw, 33vw"
+                                />
+                              </div>
+                              <div className="flex-1">
+                                <h3 className="text-sm font-medium text-gray-900 line-clamp-1">{addon.title}</h3>
+                                <p className="mt-1 text-sm font-medium text-gray-900">
+                                  {formatPrice(addon.variant.price)}
+                                </p>
+                                <p className="mt-1 text-xs text-gray-500 line-clamp-2 h-8">{addon.description}</p>
+                                <div className="mt-2 flex flex-col gap-2">
+                                  {addon.variants && addon.variants.length > 1 ? (
+                                    <select
+                                      value={selectedOptions[addon.id] || ''}
+                                      onChange={(e) => setSelectedOptions({...selectedOptions, [addon.id]: e.target.value})}
+                                      className="w-full rounded-md border-gray-300 py-1.5 text-xs focus:border-[#8B7355] focus:outline-none focus:ring-[#8B7355]"
+                                    >
+                                      {addon.variants.map((variant) => (
+                                        <option key={variant.id} value={variant.title}>
+                                          {variant.title}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  ) : (
+                                    <div className="text-xs text-gray-500">{addon.variant.title}</div>
+                                  )}
+                                  <button
+                                    onClick={() => handleAddAddon(addon)}
+                                    className={`w-full py-1.5 rounded-full text-xs font-medium ${
+                                      isItemInCart(addon.variant.id)
+                                        ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                        : 'bg-[#FF6B6B] text-white hover:bg-[#ff5252]'
+                                    }`}
+                                    disabled={isItemInCart(addon.variant.id)}
+                                  >
+                                    {isItemInCart(addon.variant.id) ? 'ADDED' : 'ADD TO BAG'}
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -341,10 +487,10 @@ export default function CartSlideOver({ isOpen, setIsOpen }: CartSlideOverProps)
                       onClick={handleCheckoutClick}
                       className={`w-full bg-[#FF6B6B] px-6 py-3 text-center text-base font-medium text-white shadow-sm hover:bg-[#ff5252] rounded-full block ${isCheckoutLoading ? 'opacity-70 cursor-wait' : ''}`}
                     >
-                      {isCheckoutLoading ? 'Preparing Checkout...' : `Checkout $${finalTotal.toFixed(2)}`}
+                      {isCheckoutLoading ? 'Preparing Checkout...' : 'CHECKOUT'}
                     </a>
                     <p className="text-xs text-gray-500 text-center mt-2">
-                      You'll be redirected to our secure checkout page
+                      Shipping and Taxes Calculated at checkout
                     </p>
                     <div className="mt-6 flex justify-center text-center text-sm text-gray-500">
                       <button
